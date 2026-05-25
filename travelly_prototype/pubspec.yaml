@@ -1,0 +1,26 @@
+name: travelly_flutter_ios_style
+description: iOS-style Flutter mockup rebuilt from supplied Figma screenshots.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  mongo_dart: ^0.10.8
+  dbcrypt: ^2.0.0
+  flutter_dotenv: ^6.0.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - .env
+
+dev_dependencies: 
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
