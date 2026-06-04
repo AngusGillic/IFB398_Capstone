@@ -1,0 +1,23 @@
+name: travelly_flutter_ios_style
+description: iOS-style Flutter mockup rebuilt from supplied Figma screenshots.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/gtfs/
+
+# PLACEHOLDER ASSETS:
+# Export real Figma assets into assets/images/ and replace the clearly marked placeholders.
+# Search the codebase for: PLACEHOLDER_ASSET
