@@ -1,15 +1,21 @@
 name: travelly_flutter_ios_style
-description: iOS-style Flutter mockup rebuilt from supplied Figma screenshots.
+description: Travelly - sustainable travel companion.
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.5.0
+  # 3.9 ships with Flutter 3.35, the first release with ClipRSuperellipse.
+  # Below this the squircle corners will not compile.
+  sdk: ^3.9.0
+  flutter: ">=3.35.0"
 
 dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
+  flutter_map: ^8.3.1
+  latlong2: ^0.9.1
+  http: ^1.2.0
 
 flutter:
   uses-material-design: true

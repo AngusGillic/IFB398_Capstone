@@ -1,5 +1,9 @@
-import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import 'package:flutter/cupertino.dart';
+
+import '../data/user_data.dart';
+import '../ui/entrance.dart';
+import '../ui/glass.dart';
+import '../ui/glass_widgets.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/card_panels.dart';
 import '../widgets/mock_painters.dart';
@@ -9,158 +13,208 @@ class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   void _open(BuildContext context, Widget page) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+    Navigator.of(context).push(CupertinoPageRoute(builder: (_) => page));
+  }
+
+  String get _greeting {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Morning';
+    if (hour < 17) return 'Afternoon';
+    return 'Evening';
   }
 
   @override
   Widget build(BuildContext context) {
+    final secondary = LGColor.resolve(LGColor.secondaryLabel, context);
+    final data = AppData.current;
+
     return AppShell(
       showBottomNav: true,
       selectedIndex: 2,
       padding: EdgeInsets.zero,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 72, 24, 105),
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        padding: EdgeInsets.fromLTRB(
+          LGGap.edge,
+          MediaQuery.paddingOf(context).top + LGGap.section,
+          LGGap.edge,
+          MediaQuery.paddingOf(context).bottom + AppShell.navHeight + LGGap.section,
+        ),
         children: [
-          Row(
+          Entrance(index: 0, child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Morning, John 👋', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900, height: 1)),
-                    SizedBox(height: 5),
-                    Text('Lets get green!', style: TextStyle(fontSize: 13, color: AppColors.text)),
+                    Text('$_greeting, John', style: LGText.largeTitle(context)),
+                    const SizedBox(height: LGGap.xxs),
+                    Text(
+                      "Let's get green",
+                      style: LGText.subhead(context).copyWith(color: secondary),
+                    ),
                   ],
                 ),
               ),
-              CircleAvatar(
-                radius: 14,
-                backgroundColor: Colors.grey.shade400,
-                child: const Icon(Icons.notifications, size: 17, color: Colors.white),
+              const SizedBox(width: LGGap.xl),
+              GlassIconButton(
+                icon: CupertinoIcons.bell_fill,
+                semanticLabel: 'Notifications',
+                size: 40,
+                iconSize: 17,
+                onPressed: () {},
               ),
             ],
-          ),
-          const SizedBox(height: 28),
-          GestureDetector(
+          )),
+          const SizedBox(height: LGGap.section),
+          Entrance(index: 1, child: GreyPanel(
             onTap: () => _open(context, const ImpactPage()),
-            child: GreyPanel(
-              margin: const EdgeInsets.symmetric(horizontal: 28),
-              padding: const EdgeInsets.fromLTRB(13, 9, 13, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Impact this week', style: TextStyle(fontSize: 13)),
-                  Container(height: 1, color: AppColors.green, margin: const EdgeInsets.only(top: 4, bottom: 10)),
-                  Row(
-                    children: const [
-                      Expanded(child: _ImpactMetric(label: 'CO2 saved', value: '2.8kg')),
-                      Expanded(child: _ImpactMetric(label: 'Trips', value: '10')),
-                      MiniGraph(),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 34),
-          GreyPanel(
-            margin: const EdgeInsets.symmetric(horizontal: 28),
-            padding: const EdgeInsets.fromLTRB(13, 9, 13, 8),
+            padding: const EdgeInsets.all(LGGap.edge),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Suggested', style: TextStyle(fontSize: 14)),
-                const Divider(height: 14, color: Colors.grey),
-                ...List.generate(4, (index) => const _SuggestedRow()),
-              ],
-            ),
-          ),
-          const SizedBox(height: 34),
-          MintPanel(
-            margin: const EdgeInsets.symmetric(horizontal: 28),
-            padding: const EdgeInsets.fromLTRB(13, 12, 13, 30),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Challenge Progress', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
-                const Divider(height: 28, color: Colors.grey),
-                const Text('Green Week Walk Challenge! 🌍', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 13),
-                const Row(
+                Row(
                   children: [
-                    Expanded(child: Text('4/7 Days completed', style: TextStyle(fontSize: 11))),
-                    Text('2000/4000 Steps', style: TextStyle(fontSize: 11)),
+                    Text('Impact this week', style: LGText.subhead(context)),
+                    const Spacer(),
+                    Icon(CupertinoIcons.chevron_right, size: 13,
+                        color: LGColor.resolve(LGColor.tertiaryLabel, context)),
                   ],
                 ),
-                const SizedBox(height: 28),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: const LinearProgressIndicator(
-                    value: 0.57,
-                    minHeight: 17,
-                    color: Color(0xFF71BDAE),
-                    backgroundColor: Colors.white,
-                  ),
+                const SizedBox(height: LGGap.edge),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: GlassStat(
+                        label: 'CO₂ saved',
+                        value: '\${data.week.co2SavedKg.toStringAsFixed(1)} kg',
+                        icon: CupertinoIcons.leaf_arrow_circlepath,
+                        color: LGColor.resolve(LGColor.eco, context),
+                      ),
+                    ),
+                    Expanded(
+                      child: GlassStat(
+                        label: 'Trips',
+                        value: '\${data.week.trips}',
+                        icon: CupertinoIcons.map_pin_ellipse,
+                      ),
+                    ),
+                    const MiniGraph(),
+                  ],
                 ),
               ],
             ),
-          ),
+          )),
+          const SizedBox(height: LGGap.edge),
+          Entrance(index: 2, child: GreyPanel(
+            padding: const EdgeInsets.all(LGGap.edge),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Suggested', style: LGText.subhead(context)),
+                const SizedBox(height: LGGap.lg),
+                for (var i = 0; i < data.suggestions.length; i++) ...[
+                  if (i > 0)
+                    Container(
+                      height: 0.33,
+                      margin: const EdgeInsets.symmetric(vertical: LGGap.lg),
+                      color: LGColor.resolve(LGColor.separator, context),
+                    ),
+                  _SuggestedRow(trip: data.suggestions[i]),
+                ],
+              ],
+            ),
+          )),
+          const SizedBox(height: LGGap.edge),
+          Entrance(index: 3, child: MintPanel(
+            padding: const EdgeInsets.all(LGGap.edge),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(CupertinoIcons.flame_fill, size: 15,
+                        color: LGColor.resolve(LGColor.eco, context)),
+                    const SizedBox(width: LGGap.sm),
+                    Text('Challenge progress', style: LGText.headline(context)),
+                  ],
+                ),
+                const SizedBox(height: LGGap.lg),
+                Text(data.challenge.title, style: LGText.subhead(context)),
+                const SizedBox(height: LGGap.lg),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                          '\${data.challenge.daysDone} of \${data.challenge.daysTotal} days',
+                          style: LGText.caption1(context).copyWith(color: secondary)),
+                    ),
+                    Text(
+                        '\${data.challenge.steps} / \${data.challenge.stepGoal} steps',
+                        style: LGText.caption1(context).copyWith(color: secondary)),
+                  ],
+                ),
+                const SizedBox(height: LGGap.lg),
+                GlassProgress(value: data.challenge.progress),
+              ],
+            ),
+          )),
         ],
       ),
-    );
-  }
-}
-
-class _ImpactMetric extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _ImpactMetric({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 10)),
-        const SizedBox(height: 8),
-        Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-      ],
     );
   }
 }
 
 class _SuggestedRow extends StatelessWidget {
-  const _SuggestedRow();
+  const _SuggestedRow({required this.trip});
+
+  final SuggestedTrip trip;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 7),
-      child: Row(
-        children: [
-          CircleAvatar(radius: 14, backgroundColor: Colors.grey.shade400, child: const Icon(Icons.work, color: Colors.white, size: 17)),
-          const SizedBox(width: 11),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Work', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, height: 1)),
-                Text('22min • Bus 150', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 10, height: 1.2)),
-                Text('Leave by 8:18am', style: TextStyle(fontSize: 8, color: AppColors.greyText, height: 1.2)),
-              ],
-            ),
+    final secondary = LGColor.resolve(LGColor.secondaryLabel, context);
+    final accent = LGColor.resolve(LGColor.accent, context);
+
+    return Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: ShapeDecoration(
+            color: accent.withValues(alpha: 0.16),
+            shape: LGShape.border(LGRadius.xs),
           ),
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          child: Icon(CupertinoIcons.briefcase_fill, color: accent, size: 16),
+        ),
+        const SizedBox(width: LGGap.xl),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text('0.8kg CO2', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
-              Text('Arrive by 8:30am', style: TextStyle(fontSize: 8, color: AppColors.greyText)),
+              Text(trip.label,
+                  style: LGText.subhead(context).copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(height: LGGap.xxs),
+              Text('${trip.durationMinutes} min · ${trip.mode}',
+                  style: LGText.caption1(context).copyWith(color: secondary)),
             ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: LGGap.md),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${trip.co2SavedKg.toStringAsFixed(1)} kg',
+                style: LGText.mono(context, size: 14)),
+            const SizedBox(height: LGGap.xxs),
+            Text('leave ${trip.leaveAt}',
+                style: LGText.caption2(context).copyWith(color: secondary)),
+          ],
+        ),
+      ],
     );
   }
 }

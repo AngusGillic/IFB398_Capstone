@@ -1,71 +1,67 @@
-import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import 'package:flutter/cupertino.dart';
 
+import '../ui/glass.dart';
+import '../ui/glass_widgets.dart';
+
+/// Standard content panel.
 class GreyPanel extends StatelessWidget {
   final Widget child;
   final EdgeInsets padding;
   final EdgeInsets margin;
   final double radius;
+  final VoidCallback? onTap;
 
   const GreyPanel({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(12),
+    this.padding = const EdgeInsets.all(LGGap.xl),
     this.margin = EdgeInsets.zero,
-    this.radius = 14,
+    this.radius = LGRadius.md,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final panel = GlassSurface(
+      radius: radius,
       margin: margin,
       padding: padding,
-      decoration: BoxDecoration(
-        color: AppColors.panel,
-        borderRadius: BorderRadius.circular(radius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.20),
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+      dense: true,
+      shadows: LGShadow.low(context),
       child: child,
     );
+
+    return onTap == null ? panel : GlassTappable(onTap: onTap, child: panel);
   }
 }
 
+/// Accent-tinted panel for highlighted content.
 class MintPanel extends StatelessWidget {
   final Widget child;
   final EdgeInsets padding;
   final EdgeInsets margin;
+  final VoidCallback? onTap;
 
   const MintPanel({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(14),
+    this.padding = const EdgeInsets.all(LGGap.edge),
     this.margin = EdgeInsets.zero,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final panel = GlassSurface(
+      radius: LGRadius.md,
       margin: margin,
       padding: padding,
-      decoration: BoxDecoration(
-        color: AppColors.mintPanel,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.18),
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+      tint: LGColor.resolve(LGColor.eco, context).withValues(alpha: 0.14),
+      shadows: LGShadow.low(context),
       child: child,
     );
+
+    return onTap == null ? panel : GlassTappable(onTap: onTap, child: panel);
   }
 }
 
@@ -75,6 +71,10 @@ class IosField extends StatelessWidget {
   final String value;
   final bool obscure;
   final IconData? trailing;
+  final TextEditingController? controller;
+  final TextInputType? keyboardType;
+  final ValueChanged<String>? onChanged;
+  final VoidCallback? onTrailingTap;
 
   const IosField({
     super.key,
@@ -83,102 +83,168 @@ class IosField extends StatelessWidget {
     required this.value,
     this.obscure = false,
     this.trailing,
+    this.controller,
+    this.keyboardType,
+    this.onChanged,
+    this.onTrailingTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 54,
-      margin: const EdgeInsets.only(bottom: 13),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(11),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.18),
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          )
-        ],
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 22, color: Colors.grey.shade700),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: const TextStyle(fontSize: 9, color: AppColors.greyText)),
-                Text(
-                  obscure ? '••••••••' : value,
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
-                ),
-              ],
+    final secondary = LGColor.resolve(LGColor.secondaryLabel, context);
+
+    final trailingIcon = trailing == null
+        ? null
+        : GlassTappable(
+            haptic: false,
+            scale: 0.85,
+            onTap: onTrailingTap,
+            child: Icon(trailing, size: 18, color: secondary),
+          );
+
+    if (controller != null) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: LGGap.xl),
+        child: GlassField(
+          controller: controller!,
+          placeholder: label,
+          icon: icon,
+          obscure: obscure,
+          keyboardType: keyboardType,
+          suffix: trailingIcon,
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: LGGap.xl),
+      child: GlassSurface(
+        radius: LGRadius.sm,
+        blur: LGGlass.blurLight,
+        padding: const EdgeInsets.symmetric(horizontal: LGGap.xl, vertical: LGGap.lg),
+        shadows: LGShadow.low(context),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: secondary),
+            const SizedBox(width: LGGap.xl),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: LGText.caption2(context).copyWith(color: secondary),
+                  ),
+                  const SizedBox(height: LGGap.xxs),
+                  Text(
+                    obscure ? '••••••••' : value,
+                    style: LGText.subhead(context).copyWith(fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
             ),
-          ),
-          if (trailing != null) Icon(trailing, size: 18, color: Colors.grey.shade700),
-        ],
+            if (trailingIcon != null) trailingIcon,
+          ],
+        ),
       ),
     );
   }
 }
 
+/// Primary action button.
 class GreenButton extends StatelessWidget {
   final String text;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool loading;
+  final IconData? icon;
 
-  const GreenButton({super.key, required this.text, required this.onTap});
+  const GreenButton({
+    super.key,
+    required this.text,
+    required this.onTap,
+    this.loading = false,
+    this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 48,
-      width: double.infinity,
-      child: FilledButton(
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.green,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
-          elevation: 4,
-          shadowColor: Colors.black.withOpacity(0.25),
-        ),
-        onPressed: onTap,
-        child: Text(text, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-      ),
+    return GlassButton(label: text, onPressed: onTap, loading: loading, icon: icon);
+  }
+}
+
+/// Secondary action button.
+class GhostButton extends StatelessWidget {
+  final String text;
+  final VoidCallback? onTap;
+  final IconData? icon;
+
+  const GhostButton({super.key, required this.text, required this.onTap, this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassButton(
+      label: text,
+      onPressed: onTap,
+      icon: icon,
+      style: GlassButtonStyle.tinted,
     );
   }
 }
 
+/// In-page header with a back chevron, for screens without a navigation bar.
 class BackTitle extends StatelessWidget {
   final String title;
   final String? trailing;
+  final VoidCallback? onTrailingTap;
 
-  const BackTitle({super.key, required this.title, this.trailing});
+  const BackTitle({super.key, required this.title, this.trailing, this.onTrailingTap});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        GestureDetector(
-          onTap: () => Navigator.maybePop(context),
-          child: const Icon(Icons.arrow_back, size: 22),
-        ),
-        Expanded(
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+    final accent = LGColor.resolve(LGColor.accent, context);
+    final canPop = Navigator.of(context).canPop();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: LGGap.edge),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 44,
+            child: canPop
+                ? GlassTappable(
+                    haptic: false,
+                    scale: 0.88,
+                    onTap: () => Navigator.maybePop(context),
+                    child: Icon(CupertinoIcons.back, size: 26, color: accent),
+                  )
+                : null,
           ),
-        ),
-        SizedBox(
-          width: 36,
-          child: trailing == null
-              ? const SizedBox()
-              : Text(trailing!, textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.w900)),
-        ),
-      ],
+          Expanded(
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: LGText.headline(context),
+            ),
+          ),
+          SizedBox(
+            width: 44,
+            child: trailing == null
+                ? null
+                : GlassTappable(
+                    haptic: false,
+                    onTap: onTrailingTap,
+                    child: Text(
+                      trailing!,
+                      textAlign: TextAlign.right,
+                      style: LGText.subhead(context).copyWith(color: accent),
+                    ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

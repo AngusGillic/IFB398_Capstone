@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_colors.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/card_panels.dart';
@@ -65,7 +66,6 @@ class _Social extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // PLACEHOLDER_ASSET: replace with real Google/Apple/social SVGs later.
     return CircleAvatar(
       radius: 27,
       backgroundColor: Colors.grey.shade200,

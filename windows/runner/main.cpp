@@ -25,9 +25,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
   FlutterWindow window(project);
+  // Phone-shaped window so the desktop build previews the real layout.
+  // Roughly an iPhone 15 Pro at 1x, plus the Windows title bar.
   Win32Window::Point origin(10, 10);
-  Win32Window::Size size(1280, 720);
-  if (!window.Create(L"travelly_flutter_ios_style", origin, size)) {
+  Win32Window::Size size(393, 852);
+  if (!window.Create(L"Travelly", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

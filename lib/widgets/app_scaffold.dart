@@ -1,14 +1,17 @@
-import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
-import 'phone_notch.dart';
+import 'package:flutter/cupertino.dart';
+
+import '../ui/glass.dart';
+import '../ui/glass_widgets.dart';
 import 'app_bottom_nav.dart';
 
+/// Page shell: backdrop, full-bleed content, and the floating tab bar.
 class AppShell extends StatelessWidget {
   final Widget child;
   final bool showNotch;
   final bool showBottomNav;
   final int selectedIndex;
   final EdgeInsets padding;
+  final bool backdrop;
 
   const AppShell({
     super.key,
@@ -16,31 +19,36 @@ class AppShell extends StatelessWidget {
     this.showNotch = true,
     this.showBottomNav = false,
     this.selectedIndex = 2,
-    this.padding = const EdgeInsets.fromLTRB(18, 18, 18, 0),
+    this.padding = const EdgeInsets.fromLTRB(LGGap.edge, LGGap.edge, LGGap.edge, 0),
+    this.backdrop = true,
   });
+
+  /// Height the tab bar occupies.
+  static const double navHeight = 64;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.screen,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Padding(
-              padding: padding,
-              child: child,
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
+    Widget content = Padding(padding: padding, child: child);
+
+    if (backdrop) {
+      content = GlassBackdrop(intensity: 0.9, child: content);
+    }
+
+    return CupertinoPageScaffold(
+      backgroundColor: LGColor.resolve(LGColor.canvas, context),
+      child: Stack(
+        children: [
+          Positioned.fill(child: content),
+          if (showBottomNav)
+            Positioned(
+              left: LGGap.xl,
+              right: LGGap.xl,
+              bottom: bottomInset + LGGap.md,
+              child: AppBottomNav(selectedIndex: selectedIndex),
             ),
-            if (showNotch)
-              const Positioned(top: 0, left: 0, right: 0, child: PhoneNotch()),
-            if (showBottomNav)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: AppBottomNav(selectedIndex: selectedIndex),
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }
