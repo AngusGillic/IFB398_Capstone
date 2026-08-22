@@ -37,6 +37,8 @@ class AppShell extends StatelessWidget {
     }
 
     return CupertinoPageScaffold(
+      // Added 'resizeToAvoidBottomInset:false' to avoid "Bottom overflowed by 1.2 pixels" error
+      resizeToAvoidBottomInset: false,
       backgroundColor: LGColor.resolve(LGColor.canvas, context),
       child: Stack(
         children: [

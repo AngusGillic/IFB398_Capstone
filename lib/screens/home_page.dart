@@ -89,7 +89,7 @@ class HomePage extends StatelessWidget {
                     Expanded(
                       child: GlassStat(
                         label: 'CO₂ saved',
-                        value: '\${data.week.co2SavedKg.toStringAsFixed(1)} kg',
+                        value: '${data.week.co2SavedKg.toStringAsFixed(1)} kg',
                         icon: CupertinoIcons.leaf_arrow_circlepath,
                         color: LGColor.resolve(LGColor.eco, context),
                       ),
@@ -97,7 +97,7 @@ class HomePage extends StatelessWidget {
                     Expanded(
                       child: GlassStat(
                         label: 'Trips',
-                        value: '\${data.week.trips}',
+                        value: '${data.week.trips}',
                         icon: CupertinoIcons.map_pin_ellipse,
                       ),
                     ),
@@ -148,11 +148,11 @@ class HomePage extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                          '\${data.challenge.daysDone} of \${data.challenge.daysTotal} days',
+                          '${data.challenge.daysDone} of ${data.challenge.daysTotal} days',
                           style: LGText.caption1(context).copyWith(color: secondary)),
                     ),
                     Text(
-                        '\${data.challenge.steps} / \${data.challenge.stepGoal} steps',
+                        '${data.challenge.steps} / ${data.challenge.stepGoal} steps',
                         style: LGText.caption1(context).copyWith(color: secondary)),
                   ],
                 ),

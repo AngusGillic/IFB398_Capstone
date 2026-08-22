@@ -10,12 +10,21 @@ environment:
   flutter: ">=3.35.0"
 
 dependencies:
+  flutter_test:
+    sdk: flutter
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
   flutter_map: ^8.3.1
   latlong2: ^0.9.1
   http: ^1.2.0
+
+  # Amplify - pinned to stable (no more Kotlin/AAR errors)
+    # Amplify - upgraded to support Android 36 SDK compiling
+  amplify_flutter: ^2.11.0
+  amplify_auth_cognito: ^2.11.0
+  amplify_api: ^2.11.0
+  amplify_datastore: ^2.11.0
 
 flutter:
   uses-material-design: true

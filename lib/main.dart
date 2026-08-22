@@ -7,10 +7,22 @@ import 'screens/welcome_page.dart';
 import 'ui/app_theme.dart';
 import 'ui/glass.dart';
 
+import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
+import 'package:amplify_flutter/amplify_flutter.dart';
+
+import 'widgets/amplifyconfiguration.dart';
+
+
 const String kStartScreen = String.fromEnvironment('START');
 
-void main() {
+void main() async{
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await _configureAmplify();
+  } on AmplifyException catch (e) {
+    safePrint("Error configuring Amplify: ${e.message}");
+  }
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Color(0x00000000),
@@ -19,6 +31,17 @@ void main() {
   ));
 
   runApp(const TravellyApp());
+}
+
+
+Future<void> _configureAmplify() async {
+  try {
+    await Amplify.addPlugin(AmplifyAuthCognito());
+    await Amplify.configure(amplifyconfig);
+    safePrint('Successfully configured');
+  } on Exception catch (e) {
+    safePrint('Error configuring Amplify: $e');
+  }
 }
 
 class TravellyApp extends StatelessWidget {
