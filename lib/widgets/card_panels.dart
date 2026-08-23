@@ -112,6 +112,7 @@ class IosField extends StatelessWidget {
           obscure: obscure,
           keyboardType: keyboardType,
           suffix: trailingIcon,
+          onChanged: onChanged,
         ),
       );
     }

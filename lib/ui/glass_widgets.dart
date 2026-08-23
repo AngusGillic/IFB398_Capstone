@@ -517,6 +517,7 @@ class GlassField extends StatelessWidget {
     this.error,
     this.autocorrect = true,
     this.enabled = true,
+    this.onChanged,
     this.onSubmitted,
     this.suffix,
     this.autofillHints,
@@ -533,6 +534,7 @@ class GlassField extends StatelessWidget {
   final String? error;
   final bool autocorrect;
   final bool enabled;
+  final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final Widget? suffix;
   final Iterable<String>? autofillHints;
@@ -572,6 +574,7 @@ class GlassField extends StatelessWidget {
             autocorrect: autocorrect,
             enabled: enabled,
             onSubmitted: onSubmitted,
+            onChanged: onChanged,
             autofillHints: autofillHints,
             maxLines: obscure ? 1 : maxLines,
             padding: const EdgeInsets.symmetric(horizontal: LGGap.xl, vertical: 13),
