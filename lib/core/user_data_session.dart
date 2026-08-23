@@ -27,6 +27,12 @@ class UserDataSession {
     _binding = true;
     try {
       final sub = await _resolveCognitoSub();
+
+      // For Debugging only:
+      // final currentUser = await Amplify.Auth.getCurrentUser();
+      // safePrint(currentUser);
+
+
       if (sub == null) {
         debugPrint('UserDataSession.onAuthenticated: no Cognito sub');
         return;
@@ -116,6 +122,7 @@ class UserDataSession {
       final session = await Amplify.Auth.fetchAuthSession();
       if (!session.isSignedIn) return null;
       final attrs = await Amplify.Auth.fetchUserAttributes();
+      safePrint(attrs);
       for (final a in attrs) {
         if (a.userAttributeKey == CognitoUserAttributeKey.sub) {
           return a.value;

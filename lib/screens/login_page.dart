@@ -204,7 +204,7 @@ class _LoginPageState extends State<LoginPage> {
                 const Spacer(),
 
                 GestureDetector(
-                  onTap: () => _open(context, const SignUpPage()),
+                  onTap: () => _open(context, SignUpPage()),
                   child: const Text.rich(
                     TextSpan(
                       text: "Don't have an account? ", 

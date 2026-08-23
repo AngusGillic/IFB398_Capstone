@@ -9,11 +9,27 @@ import '../widgets/app_scaffold.dart';
 import 'appearance_page.dart';
 import 'privacy_settings_page.dart';
 
+// Deepak's packages
+import 'package:amplify_flutter/amplify_flutter.dart';
+import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
+
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
   void _open(BuildContext context, Widget page) {
     Navigator.of(context).push(CupertinoPageRoute(builder: (_) => page));
+  }
+
+  Future<void> _signOut (BuildContext context) async {
+    try { 
+      final result = await Amplify.Auth.signOut();
+      if(result is CognitoCompleteSignOut) {
+        safePrint('Sign out completed successfully');
+        Navigator.of(context).popUntil((r) => r.isFirst);
+      }
+    } on AuthException catch (e) {
+      safePrint("Error: ${e.toString()}");
+    }
   }
 
   @override
@@ -106,7 +122,7 @@ class SettingsPage extends StatelessWidget {
                     destructive: true,
                   );
                   if (confirmed && context.mounted) {
-                    Navigator.of(context).popUntil((r) => r.isFirst);
+                    _signOut(context);
                   }
                 },
               ),
