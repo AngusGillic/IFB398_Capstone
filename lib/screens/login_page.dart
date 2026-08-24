@@ -53,37 +53,10 @@ class _LoginPageState extends State<LoginPage> {
       safePrint('Error: ${e.toString()}');
       final message = e.message;
       _showDialogError(context, message);
-      // if (context.mounted) {
-      //   final message = e.toString();
-      //   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      //     content: Text(message),
-      //   ));
-      // }
-      // AlertDialog(
-      //   title: Text("Login Failed"),
-      //   content: Text(message),
-      //   actions: [
-      //     TextButton(onPressed: () {Navigator.of(context).pop();}, child: Text("OK")),
-      //   ],
-      // );
     }
   }
 
   /// Displays an error dialog with the given message.
-  // void _showError(String msg) {
-  //   showPlatformAdaptiveDialog(
-  //     context: context,
-  //     title: 'Error',
-  //     content: msg,
-  //     actions: [
-  //       Adapt.of(context).outlinedButton(
-  //         label: 'OK',
-  //         onPressed: () => Navigator.pop(context),
-  //       ),
-  //     ],
-  //   );
-  // }
-
   void _showDialogError(BuildContext context, String message) {
     showCupertinoDialog(
       context: context, 

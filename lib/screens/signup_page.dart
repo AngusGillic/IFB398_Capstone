@@ -79,8 +79,6 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   void _onPasswordMatched() {
-    // Current bug: confirm field is still green even if the first password field changed
-    // Once matched, it stays green, unless the confirm password field changed
     final passwordCtrl = passwordController;
     final confirmCtrl = confirmController;
     
@@ -93,7 +91,48 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   Future<void> _register(BuildContext context) async {
+    // For debugging only
     safePrint("Form is validated, function _register is running");
+
+    final username = UsernameMapper.emailToUsername(emailController.text.trim());
+
+    try {
+      final result = await Amplify.Auth.signUp(
+        username: username,
+        password: passwordController.text.trim(),
+        options: SignUpOptions(
+          userAttributes: {
+            CognitoUserAttributeKey.email: emailController.text.trim(),
+          },
+        ),
+      );
+
+      if (result.isSignUpComplete) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Registration successful. Please login.')),
+          );
+          Navigator.pop(context);
+        }
+      } else {
+        // if (mounted) {
+        //   Navigator.push(
+        //     context,
+        //     // adaptivePageRoute(
+        //     //   builder: (_) => ConfirmationScreen(
+        //     //     username: username,
+        //     //     email: emailCtrl.text.trim(),
+        //     //   ),
+        //     // ),
+        //   );
+        // }
+      }
+    } on AuthException catch (e) {
+      // setState(() => signupError = e.message);
+    } 
+    // finally {
+    //   setState(() => isLoading = false);
+    // }
   }
 
   
@@ -116,19 +155,13 @@ class _SignUpPageState extends State<SignUpPage> {
     );
  }
 
+  // Check if provided user credential data is qualified for sign up process
   bool isFormValidated(String email, String password, BuildContext context){
     if (isValidEmail(email) && (isValidPassword(password))) {
       return true;
     }
 
-    // if (!isValidEmail(email)) {
-    //   _showDialogError(context, "Please enter a valid email address");
-    // }
-
-    // if (!isValidPassword(password)) {
-    //   _showDialogError(context, "Password must meet the criteria below");
-    // }
-
+    // Error dialogs based on various conditions
     if (email.isEmpty || password.isEmpty) {
       _showDialogError(context, "Please enter all fields");
     } else if (!isValidEmail(email)) {
@@ -169,12 +202,12 @@ class _SignUpPageState extends State<SignUpPage> {
                 GreenButton(
                   text: 'Sign up', 
                   onTap: () => 
-                  // _open(context, const VerifyEmailPage())
-                  isFormValidated(
-                    emailController.text.trim(), 
-                    passwordController.text.trim(), 
-                    context
-                  ) ? _register(context) : (){}
+                  _open(context, VerifyEmailPage())
+                  // isFormValidated(
+                  //   emailController.text.trim(), 
+                  //   passwordController.text.trim(), 
+                  //   context
+                  // ) ? _register(context) : (){}
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(
