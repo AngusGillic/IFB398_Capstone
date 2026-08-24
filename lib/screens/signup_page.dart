@@ -134,7 +134,7 @@ class _SignUpPageState extends State<SignUpPage> {
     } else if (!isValidEmail(email)) {
       _showDialogError(context, "Please enter a valid email address");
     } else if (!isValidEmail(password)) {
-      _showDialogError(context, "Password must meet the criteria below");
+      _showDialogError(context, "Password must meet all criteria below");
     }
 
     return false;
@@ -158,7 +158,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 // IosField(icon: Icons.person, label: 'Full name', value: '', controller: nameController),
                 IosField(icon: Icons.mail, label: 'Email', value: '', controller: emailController),
                 IosField(icon: Icons.password, label: 'Password', value: '', controller: passwordController, obscure: true, trailing: Icons.visibility, onChanged: _onPasswordChanged,),
-                IosField(icon: Icons.lock, label: 'Confirm Password', value: '', controller: confirmController, obscure: true, trailing: Icons.visibility,),
+                IosField(icon: Icons.lock, label: 'Confirm Password', value: '', controller: confirmController, obscure: true, trailing: Icons.visibility, onChanged: _onPasswordChanged,),
                 _Rule(text: 'At least 8 characters', condition: charLength,),
                 _Rule(text: 'Includes number', condition: includeNum,),
                 _Rule(text: 'Includes uppercase letter', condition: includeUpCse,),
