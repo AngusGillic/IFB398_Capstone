@@ -54,20 +54,21 @@ class _VerifyEmailState extends State<VerifyEmailPage>  {
     }
 
     // if over to index 6, force the input to stop focus
-    if (index == 5 && number.isNotEmpty) {
+    if ((index == 5 && number.isNotEmpty) || (index == 0 && number.isEmpty)) {
       FocusScope.of(context).unfocus();
     }
     
     // if new input is empty, focus to previous focusNode
-    if (number.isEmpty) {
+    if (number.isEmpty && index > 0) {
       _focusNodes[index - 1].requestFocus();
     }
-
   }
 
   // Collect the digits from each otpCtrl to merge all into one combination code
   String _getOTPCode() {
-    return _otpCtrllers.map((otpCtrl) => otpCtrl.text).join();
+    final code = _otpCtrllers.map((otpCtrl) => otpCtrl.text).join();
+    safePrint("Verification Code : ${code}");
+    return code;
   }
 
 
@@ -96,7 +97,8 @@ class _VerifyEmailState extends State<VerifyEmailPage>  {
           const Spacer(),
           GreenButton(
             text: 'Verify',
-            onTap: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage())),
+            // onTap: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage())),
+            onTap: () => _getOTPCode(),
           ),
           const SizedBox(height: 18),
         ],
