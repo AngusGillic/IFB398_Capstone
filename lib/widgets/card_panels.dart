@@ -73,6 +73,7 @@ class IosField extends StatelessWidget {
   final IconData? trailing;
   final TextEditingController? controller;
   final TextInputType? keyboardType;
+  // Added onChanged for dynamic input field tracking, used for Form Validation
   final ValueChanged<String>? onChanged;
   final VoidCallback? onTrailingTap;
 

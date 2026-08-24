@@ -116,6 +116,7 @@ class _LoginPageState extends State<LoginPage> {
       // Added CustomScrollView + SliverFillRemaining to fix the renderflex overflow issue
       // Originally added SingleChildScrollView() but Spacer() is not compatible with it
       child: CustomScrollView(
+        physics: const NeverScrollableScrollPhysics(),
         slivers:[
           SliverFillRemaining(
             hasScrollBody: false,

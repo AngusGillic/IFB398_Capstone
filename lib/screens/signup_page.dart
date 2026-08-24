@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
@@ -46,6 +47,14 @@ class _SignUpPageState extends State<SignUpPage> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    emailController.addListener(() => setState(() {}));
+    passwordController.addListener(() => setState(() {}));
+    confirmController.addListener(() => setState(() {}));
+    super.initState();
+  }
+
   /// Validates if the email matches a basic email pattern.
   bool isValidEmail(String email) {
     final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
@@ -54,17 +63,11 @@ class _SignUpPageState extends State<SignUpPage> {
 
   /// Validates password strength: at least 8 characters, with uppercase, lowercase, digit, and special character.
   bool isValidPassword(String password) {
-    // if (password.length < 8) return false;
-    // final hasUpper = RegExp(r'[A-Z]').hasMatch(password);
-    // final hasLower = RegExp(r'[a-z]').hasMatch(password);
-    // final hasDigit = RegExp(r'\d').hasMatch(password);
-    // final hasSpecial = RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password);
-    // return hasUpper && hasLower && hasDigit && hasSpecial;
     return charLength && includeNum && includeUpCse && includeLwCse && includeSpCh && pwdMatch;
   }
 
   void _onPasswordChanged(String password) {
-    safePrint("charLength = $charLength");
+    // safePrint("charLength = $charLength");
     setState(() {
       charLength = password.length >= 8 ;
       includeUpCse = RegExp(r'[A-Z]').hasMatch(password);
@@ -72,11 +75,16 @@ class _SignUpPageState extends State<SignUpPage> {
       includeNum = RegExp(r'\d').hasMatch(password);
       includeSpCh = RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password);
     });
+    _onPasswordMatched(password);
   }
 
   void _onPasswordMatched(String password) {
+    // Current bug: confirm field is still green even if the first password field changed
+    // Once matched, it stays green, unless the confirm password field changed
+    
+    safePrint("Password match: $pwdMatch");
     setState(() {
-      pwdMatch = passwordController.text.contains(password);
+      pwdMatch = passwordController.text.trim() == password.trim();
     });
   }
 
@@ -84,10 +92,47 @@ class _SignUpPageState extends State<SignUpPage> {
     safePrint("Form is validated, function _register is running");
   }
 
-  bool isFormValidated(String email, String password) {
+  
+ void _showDialogError(BuildContext context, String message) {
+    showCupertinoDialog(
+      context: context, 
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text("Sign Up Failed"),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text("Okay"),
+            isDefaultAction: true,
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          )
+        ],
+      )
+    );
+ }
+
+  bool isFormValidated(String email, String password, BuildContext context){
     if (isValidEmail(email) && (isValidPassword(password))) {
       return true;
     }
+
+    // if (!isValidEmail(email)) {
+    //   _showDialogError(context, "Please enter a valid email address");
+    // }
+
+    // if (!isValidPassword(password)) {
+    //   _showDialogError(context, "Password must meet the criteria below");
+    // }
+
+    if (email.isEmpty || password.isEmpty) {
+      _showDialogError(context, "Please enter all fields");
+    } else if (!isValidEmail(email)) {
+      _showDialogError(context, "Please enter a valid email address");
+    } else if (!isValidEmail(password)) {
+      _showDialogError(context, "Password must meet the criteria below");
+    }
+
     return false;
   }
 
@@ -96,6 +141,7 @@ class _SignUpPageState extends State<SignUpPage> {
   Widget build(BuildContext context) {
     return AppShell(
       child: CustomScrollView(
+        physics: const NeverScrollableScrollPhysics(),
         slivers: [
           SliverFillRemaining(
             hasScrollBody: false,
@@ -120,7 +166,11 @@ class _SignUpPageState extends State<SignUpPage> {
                   text: 'Sign up', 
                   onTap: () => 
                   // _open(context, const VerifyEmailPage())
-                  isFormValidated(emailController.text.trim(), passwordController.text.trim()) ? _register(context) : (){}
+                  isFormValidated(
+                    emailController.text.trim(), 
+                    passwordController.text.trim(), 
+                    context
+                  ) ? _register(context) : (){}
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(
@@ -142,10 +192,10 @@ class _SignUpPageState extends State<SignUpPage> {
 
 class _Rule extends StatelessWidget {
   final String text;
+  // bool condition for dynamic input field tracking
   final bool condition;
   
   const _Rule({
-    // super.key,
     required this.text,
     required this.condition
   });
@@ -157,7 +207,6 @@ class _Rule extends StatelessWidget {
           Icon(Icons.check_circle_outline, size: 25, color: condition ? AppColors.green : AppColors.greyText),
           const SizedBox(width: 5),
           Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
-        
       ],
     );
   }

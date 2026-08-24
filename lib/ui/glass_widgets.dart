@@ -517,6 +517,7 @@ class GlassField extends StatelessWidget {
     this.error,
     this.autocorrect = true,
     this.enabled = true,
+    // Added onChanged for dynamic input field tracking, used for Form Validation
     this.onChanged,
     this.onSubmitted,
     this.suffix,
@@ -534,6 +535,7 @@ class GlassField extends StatelessWidget {
   final String? error;
   final bool autocorrect;
   final bool enabled;
+  // Added onChanged for dynamic input field tracking, used for Form Validation
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final Widget? suffix;
@@ -574,6 +576,7 @@ class GlassField extends StatelessWidget {
             autocorrect: autocorrect,
             enabled: enabled,
             onSubmitted: onSubmitted,
+            // Added onChanged for dynamic input field tracking, used for Form Validation
             onChanged: onChanged,
             autofillHints: autofillHints,
             maxLines: obscure ? 1 : maxLines,
