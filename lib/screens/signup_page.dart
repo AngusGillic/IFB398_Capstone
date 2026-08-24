@@ -75,16 +75,20 @@ class _SignUpPageState extends State<SignUpPage> {
       includeNum = RegExp(r'\d').hasMatch(password);
       includeSpCh = RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password);
     });
-    _onPasswordMatched(password);
+    _onPasswordMatched();
   }
 
-  void _onPasswordMatched(String password) {
+  void _onPasswordMatched() {
     // Current bug: confirm field is still green even if the first password field changed
     // Once matched, it stays green, unless the confirm password field changed
+    final passwordCtrl = passwordController;
+    final confirmCtrl = confirmController;
     
     safePrint("Password match: $pwdMatch");
     setState(() {
-      pwdMatch = passwordController.text.trim() == password.trim();
+      pwdMatch = passwordCtrl.text.trim() == confirmCtrl.text.trim()
+        && passwordCtrl.text.trim().isNotEmpty
+        && confirmCtrl.text.trim().isNotEmpty;
     });
   }
 
@@ -154,7 +158,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 // IosField(icon: Icons.person, label: 'Full name', value: '', controller: nameController),
                 IosField(icon: Icons.mail, label: 'Email', value: '', controller: emailController),
                 IosField(icon: Icons.password, label: 'Password', value: '', controller: passwordController, obscure: true, trailing: Icons.visibility, onChanged: _onPasswordChanged,),
-                IosField(icon: Icons.lock, label: 'Confirm Password', value: '', controller: confirmController, obscure: true, trailing: Icons.visibility, onChanged: _onPasswordMatched,),
+                IosField(icon: Icons.lock, label: 'Confirm Password', value: '', controller: confirmController, obscure: true, trailing: Icons.visibility,),
                 _Rule(text: 'At least 8 characters', condition: charLength,),
                 _Rule(text: 'Includes number', condition: includeNum,),
                 _Rule(text: 'Includes uppercase letter', condition: includeUpCse,),
