@@ -34,6 +34,10 @@ class _SignUpPageState extends State<SignUpPage> {
   bool pwdMatch = false;
 
 
+  void _replace(BuildContext context, Widget page) {
+    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => page));
+  }
+
   void _open(BuildContext context, Widget page) {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
   }
@@ -67,7 +71,6 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   void _onPasswordChanged(String password) {
-    // safePrint("charLength = $charLength");
     setState(() {
       charLength = password.length >= 8 ;
       includeUpCse = RegExp(r'[A-Z]').hasMatch(password);
@@ -79,6 +82,9 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   void _onPasswordMatched() {
+    // New bug: tracks all field for the rest of password criteria
+    // Example scenario: If change confirm password field where it doesn't match, it reset the state
+    // for the rest of the password criteria
     final passwordCtrl = passwordController;
     final confirmCtrl = confirmController;
     
@@ -115,45 +121,41 @@ class _SignUpPageState extends State<SignUpPage> {
           Navigator.pop(context);
         }
       } else {
-        // if (mounted) {
-        //   Navigator.push(
-        //     context,
-        //     // adaptivePageRoute(
-        //     //   builder: (_) => ConfirmationScreen(
-        //     //     username: username,
-        //     //     email: emailCtrl.text.trim(),
-        //     //   ),
-        //     // ),
-        //   );
-        // }
+        if (mounted) {
+          _replace(context, VerifyEmailPage(
+            username: username, 
+            email: emailController.text.trim(),
+          ));
+        }
       }
     } on AuthException catch (e) {
-      // setState(() => signupError = e.message);
+      safePrint('Error: ${e.toString()}');
+      final message = e.message;
+      _showDialogError(context, message);
     } 
     // finally {
     //   setState(() => isLoading = false);
     // }
   }
-
   
- void _showDialogError(BuildContext context, String message) {
-    showCupertinoDialog(
-      context: context, 
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text("Sign Up Failed"),
-        content: Text(message),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text("Okay"),
-            isDefaultAction: true,
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          )
-        ],
-      )
-    );
- }
+  void _showDialogError(BuildContext context, String message) {
+      showCupertinoDialog(
+        context: context, 
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text("Sign Up Failed"),
+          content: Text(message),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text("Okay"),
+              isDefaultAction: true,
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            )
+          ],
+        )
+      );
+  }
 
   // Check if provided user credential data is qualified for sign up process
   bool isFormValidated(String email, String password, BuildContext context){
@@ -202,12 +204,12 @@ class _SignUpPageState extends State<SignUpPage> {
                 GreenButton(
                   text: 'Sign up', 
                   onTap: () => 
-                  _open(context, VerifyEmailPage())
-                  // isFormValidated(
-                  //   emailController.text.trim(), 
-                  //   passwordController.text.trim(), 
-                  //   context
-                  // ) ? _register(context) : (){}
+                  // _open(context, VerifyEmailPage())
+                  isFormValidated(
+                    emailController.text.trim(), 
+                    passwordController.text.trim(), 
+                    context
+                  ) ? _register(context) : (){}
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(

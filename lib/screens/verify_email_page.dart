@@ -12,7 +12,14 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 
 class VerifyEmailPage extends StatefulWidget {
-  const VerifyEmailPage({super.key});
+  final String username;
+  final String email;
+
+  const VerifyEmailPage({
+    required this.username,
+    required this.email,
+    super.key
+  });
 
   @override
   State<VerifyEmailPage> createState() => _VerifyEmailState();
@@ -43,31 +50,135 @@ class _VerifyEmailState extends State<VerifyEmailPage>  {
 
  // To track and monitor which OTP box is currently being highlighted
  // From left to right, one at a time. 
+ // Current Bug: can't backspace base on current index of FocusNode
   void _onCodeChange(int index, String number) {
-    final List<String> inputTracker = [];
-
-    // adding rules to make sure the index is in range and number is contains a digit
-    if (number.isNotEmpty && index < 5) {
-      // Field start at index 0, then each input will run the index + 1
-      inputTracker.add(number);
-      _focusNodes[index + 1].requestFocus();
-    }
-
-    // if over to index 6, force the input to stop focus
-    if ((index == 5 && number.isNotEmpty) || (index == 0 && number.isEmpty)) {
-      FocusScope.of(context).unfocus();
-    }
-    
-    // if new input is empty, focus to previous focusNode
-    if (number.isEmpty && index > 0) {
-      _focusNodes[index - 1].requestFocus();
+    // For adding in new inputs
+    if (number.isNotEmpty){
+      // adding rules to make sure the index is in range 
+      if (index < 5) {
+        // Field start at index 0, then each input will run the index + 1
+        _focusNodes[index + 1].requestFocus();
+      } else {
+        FocusScope.of(context).unfocus();        
+      }
+    // For removing inputs
+    } else {
+      // if new input is empty, focus to previous focusNode
+      if (index > 0) {
+        _focusNodes[index - 1].requestFocus();
+      } else {
+        FocusScope.of(context).unfocus();
+      }
     }
   }
+
+  // Verify function
+  Future<void> _verifyCode(BuildContext context) async {
+    // setState(() { isLoading = true; error = null; });
+
+    final confirmCode = _getOTPCode();
+    if (confirmCode.isEmpty) _showDialogError(context, "Please enter verification code to register"); 
+
+    try {
+      final result = await Amplify.Auth.confirmSignUp(
+        username: widget.username,
+        confirmationCode: confirmCode
+      );
+
+      if (result.isSignUpComplete) {
+        if (mounted) {
+          showCupertinoDialog(
+            context: context, 
+            builder: (context) => CupertinoAlertDialog(
+              title: const Text("Verfication Complete"),
+              content: Text("Welcome to Travelly! You are now a register user"),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text("Confirm"),
+                  isDefaultAction: true,
+                  onPressed: () {
+                    // Navigator.pop(context);
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (_) => const HomePage())
+                    );
+                  },
+                )
+              ],
+            )
+          );
+        }
+      }
+    } on AuthException catch (e) {
+      safePrint('Error: ${e.toString()}');
+      final message = e.message;
+      _showDialogError(context, message);
+    } 
+    //finally {
+    //   setState(() => isLoading = false);
+    // }
+  }
+
+  // -------------------------------------FOR LATER DEVELOPMENT-------------------------------------
+  // Future<void> resendCode() async {
+  //   // setState(() { isLoading = true; error = null; });
+
+  //   try {
+  //     await Amplify.Auth.resendSignUpCode(username: widget.username);
+  //     if (mounted) {
+  //       // ScaffoldMessenger.of(context).showSnackBar(
+  //       //   const SnackBar(content: Text('Confirmation code resent')),
+  //       // );
+  //       showCupertinoDialog(
+  //         context: context, 
+  //         builder: (context) => CupertinoAlertDialog(
+  //           title: const Text("Verfication Code Resent"),
+  //           content: Text("Please check your email for new verfication code"),
+  //           actions: [
+  //             CupertinoDialogAction(
+  //               child: const Text("Okay"),
+  //               isDefaultAction: true,
+  //               onPressed: () {
+  //                 Navigator.pop(context);
+  //               },
+  //             )
+  //           ],
+  //         )
+  //       );
+  //     }
+  //   } on AuthException catch (e) {
+  //     safePrint('Error: ${e.toString()}');
+  //     final message = e.message;
+  //     _showDialogError(context, message);
+  //   } 
+  //   //finally {
+  //   //   setState(() => isLoading = false);
+  //   // }
+  // }
+  // -------------------------------------FOR LATER DEVELOPMENT-------------------------------------
+  
+  void _showDialogError(BuildContext context, String message) {
+    showCupertinoDialog(
+      context: context, 
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text("Verfication Failed"),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text("Okay"),
+            isDefaultAction: true,
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          )
+        ],
+      )
+    );
+ }
 
   // Collect the digits from each otpCtrl to merge all into one combination code
   String _getOTPCode() {
     final code = _otpCtrllers.map((otpCtrl) => otpCtrl.text).join();
-    safePrint("Verification Code : ${code}");
+    // safePrint("Verification Code : ${code}");
     return code;
   }
 
@@ -98,7 +209,7 @@ class _VerifyEmailState extends State<VerifyEmailPage>  {
           GreenButton(
             text: 'Verify',
             // onTap: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage())),
-            onTap: () => _getOTPCode(),
+            onTap: () => _verifyCode(context),
           ),
           const SizedBox(height: 18),
         ],
@@ -111,14 +222,13 @@ class _CodeBox extends StatelessWidget {
   final TextEditingController otpBoxController;
   final FocusNode focusNode;
   final ValueChanged<String> onChanged;
-  final VoidCallback? onBackspace;
+  // final VoidCallback? onBackspace;
 
 
   const _CodeBox({
     required this.otpBoxController,
     required this.focusNode,
     required this.onChanged,
-    this.onBackspace,
   });
 
   @override
@@ -144,6 +254,10 @@ class _CodeBox extends StatelessWidget {
           fontSize: 20, 
           fontWeight: FontWeight.w900
         ),
+        // making sure the input is strictly numbers only
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly
+        ],
       ),
     );
   }
