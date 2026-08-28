@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import '../theme/app_colors.dart';
 import '../widgets/app_scaffold.dart';
@@ -18,24 +19,23 @@ class VerifyEmailPage extends StatefulWidget {
   const VerifyEmailPage({
     required this.username,
     required this.email,
-    super.key
+    super.key,
   });
 
   @override
   State<VerifyEmailPage> createState() => _VerifyEmailState();
 }
 
-class _VerifyEmailState extends State<VerifyEmailPage>  {
-  // final otp1Ctrl = TextEditingController();
-  // final otp2Ctrl = TextEditingController();
-  // final otp3Ctrl = TextEditingController();
-  // final otp4Ctrl = TextEditingController();
-  // final otp5Ctrl = TextEditingController();
-  // final otp6Ctrl = TextEditingController();
-  final List<TextEditingController> _otpCtrllers = List.generate(6, (_) => TextEditingController());
+class _VerifyEmailState extends State<VerifyEmailPage> {
+  final List<TextEditingController> _otpCtrllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
-  @override 
+  bool loadingAnimation = false;
+
+  @override
   void dispose() {
     for (final otpCtrl in _otpCtrllers) {
       otpCtrl.dispose();
@@ -48,20 +48,20 @@ class _VerifyEmailState extends State<VerifyEmailPage>  {
     super.dispose();
   }
 
- // To track and monitor which OTP box is currently being highlighted
- // From left to right, one at a time. 
- // Current Bug: can't backspace base on current index of FocusNode
+  // To track and monitor which OTP box is currently being highlighted
+  // From left to right, one at a time.
+  // Current Bug: can't backspace base on current index of FocusNode
   void _onCodeChange(int index, String number) {
     // For adding in new inputs
-    if (number.isNotEmpty){
-      // adding rules to make sure the index is in range 
+    if (number.isNotEmpty) {
+      // adding rules to make sure the index is in range
       if (index < 5) {
         // Field start at index 0, then each input will run the index + 1
         _focusNodes[index + 1].requestFocus();
       } else {
-        FocusScope.of(context).unfocus();        
+        FocusScope.of(context).unfocus();
       }
-    // For removing inputs
+      // For removing inputs
     } else {
       // if new input is empty, focus to previous focusNode
       if (index > 0) {
@@ -74,21 +74,22 @@ class _VerifyEmailState extends State<VerifyEmailPage>  {
 
   // Verify function
   Future<void> _verifyCode(BuildContext context) async {
-    // setState(() { isLoading = true; error = null; });
+    setState(() { loadingAnimation = true; });
 
     final confirmCode = _getOTPCode();
-    if (confirmCode.isEmpty) _showDialogError(context, "Please enter verification code to register"); 
+    if (confirmCode.isEmpty)
+      _showDialogError(context, "Please enter verification code to register");
 
     try {
       final result = await Amplify.Auth.confirmSignUp(
         username: widget.username,
-        confirmationCode: confirmCode
+        confirmationCode: confirmCode,
       );
 
       if (result.isSignUpComplete) {
         if (mounted) {
           showCupertinoDialog(
-            context: context, 
+            context: context,
             builder: (context) => CupertinoAlertDialog(
               title: const Text("Verfication Complete"),
               content: Text("Welcome to Travelly! You are now a register user"),
@@ -99,12 +100,12 @@ class _VerifyEmailState extends State<VerifyEmailPage>  {
                   onPressed: () {
                     // Navigator.pop(context);
                     Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (_) => const HomePage())
+                      MaterialPageRoute(builder: (_) => const HomePage()),
                     );
                   },
-                )
+                ),
               ],
-            )
+            ),
           );
         }
       }
@@ -112,10 +113,9 @@ class _VerifyEmailState extends State<VerifyEmailPage>  {
       safePrint('Error: ${e.toString()}');
       final message = e.message;
       _showDialogError(context, message);
-    } 
-    //finally {
-    //   setState(() => isLoading = false);
-    // }
+    } finally {
+      setState(() => loadingAnimation = false);
+    }
   }
 
   // -------------------------------------FOR LATER DEVELOPMENT-------------------------------------
@@ -129,7 +129,7 @@ class _VerifyEmailState extends State<VerifyEmailPage>  {
   //       //   const SnackBar(content: Text('Confirmation code resent')),
   //       // );
   //       showCupertinoDialog(
-  //         context: context, 
+  //         context: context,
   //         builder: (context) => CupertinoAlertDialog(
   //           title: const Text("Verfication Code Resent"),
   //           content: Text("Please check your email for new verfication code"),
@@ -149,16 +149,16 @@ class _VerifyEmailState extends State<VerifyEmailPage>  {
   //     safePrint('Error: ${e.toString()}');
   //     final message = e.message;
   //     _showDialogError(context, message);
-  //   } 
+  //   }
   //   //finally {
   //   //   setState(() => isLoading = false);
   //   // }
   // }
   // -------------------------------------FOR LATER DEVELOPMENT-------------------------------------
-  
+
   void _showDialogError(BuildContext context, String message) {
     showCupertinoDialog(
-      context: context, 
+      context: context,
       builder: (context) => CupertinoAlertDialog(
         title: const Text("Verfication Failed"),
         content: Text(message),
@@ -169,11 +169,11 @@ class _VerifyEmailState extends State<VerifyEmailPage>  {
             onPressed: () {
               Navigator.pop(context);
             },
-          )
+          ),
         ],
-      )
+      ),
     );
- }
+  }
 
   // Collect the digits from each otpCtrl to merge all into one combination code
   String _getOTPCode() {
@@ -182,29 +182,43 @@ class _VerifyEmailState extends State<VerifyEmailPage>  {
     return code;
   }
 
-
   @override
   Widget build(BuildContext context) {
     return AppShell(
+      loading: loadingAnimation,
       child: Column(
         children: [
           const SizedBox(height: 72),
-          const Text('Verify Your Email', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+          const Text(
+            'Verify Your Email',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 12),
-          const Text('Enter the 6-digit code sent to', style: TextStyle(fontSize: 12, color: AppColors.greyText)),
-          const Text('JohnDoe@email.com', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
+          const Text(
+            'Enter the 6-digit code sent to',
+            style: TextStyle(fontSize: 12, color: AppColors.greyText),
+          ),
+          const Text(
+            'JohnDoe@email.com',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 38),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, 
-            children: List.generate(6, (index) => 
-              _CodeBox(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(
+              6,
+              (index) => _CodeBox(
                 otpBoxController: _otpCtrllers[index],
                 focusNode: _focusNodes[index],
                 onChanged: (value) => _onCodeChange(index, value),
-              )
-            )
+              ),
+            ),
           ),
           const SizedBox(height: 24),
-          const Text('Resend Code in 26 seconds', style: TextStyle(fontSize: 11, color: AppColors.greyText)),
+          const Text(
+            'Resend Code in 26 seconds',
+            style: TextStyle(fontSize: 11, color: AppColors.greyText),
+          ),
           const Spacer(),
           GreenButton(
             text: 'Verify',
@@ -224,7 +238,6 @@ class _CodeBox extends StatelessWidget {
   final ValueChanged<String> onChanged;
   // final VoidCallback? onBackspace;
 
-
   const _CodeBox({
     required this.otpBoxController,
     required this.focusNode,
@@ -240,7 +253,13 @@ class _CodeBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.14), blurRadius: 5, offset: const Offset(0, 3))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.14),
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: CupertinoTextField(
         controller: otpBoxController,
@@ -250,14 +269,9 @@ class _CodeBox extends StatelessWidget {
         textAlign: TextAlign.center,
         decoration: null,
         onChanged: onChanged,
-        style: TextStyle(
-          fontSize: 20, 
-          fontWeight: FontWeight.w900
-        ),
+        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
         // making sure the input is strictly numbers only
-        inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly
-        ],
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       ),
     );
   }

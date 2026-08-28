@@ -1,8 +1,11 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 import '../ui/glass.dart';
 import '../ui/glass_widgets.dart';
 import 'app_bottom_nav.dart';
+
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 /// Page shell: backdrop, full-bleed content, and the floating tab bar.
 class AppShell extends StatelessWidget {
@@ -12,6 +15,8 @@ class AppShell extends StatelessWidget {
   final int selectedIndex;
   final EdgeInsets padding;
   final bool backdrop;
+  // Added this attribute to allow loading screen to fully cover the screen
+  final bool loading;
 
   const AppShell({
     super.key,
@@ -21,6 +26,8 @@ class AppShell extends StatelessWidget {
     this.selectedIndex = 2,
     this.padding = const EdgeInsets.fromLTRB(LGGap.edge, LGGap.edge, LGGap.edge, 0),
     this.backdrop = true,
+    // Added this attribute to allow loading screen to fully cover the screen
+    this.loading = false,
   });
 
   /// Height the tab bar occupies.
@@ -50,6 +57,19 @@ class AppShell extends StatelessWidget {
               bottom: bottomInset + LGGap.md,
               child: AppBottomNav(selectedIndex: selectedIndex),
             ),
+          // This will manifest based on the setState function that manipulates the attributes 
+          // during runtime.
+          if (loading == true) 
+            Positioned.fill(
+              child: 
+              Container(
+                width: double.infinity,
+                color: Colors.black.withAlpha(85),
+                child: Center(
+                  child: LoadingAnimationWidget.inkDrop(color: const Color.fromARGB(255, 40, 223, 46), size: 70)
+                ),
+              )
+            )
         ],
       ),
     );
