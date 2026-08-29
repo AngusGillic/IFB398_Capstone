@@ -6,7 +6,6 @@ import '../widgets/app_scaffold.dart';
 import '../widgets/card_panels.dart';
 import 'home_page.dart';
 import 'signup_page.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 // Deepak's packages
 import 'package:amplify_flutter/amplify_flutter.dart';
@@ -62,9 +61,6 @@ class _LoginPageState extends State<LoginPage> {
         // Isolate local data (groups, points, trips filter) to this Cognito sub.
         await UserDataSession.onAuthenticated();
         if (!mounted) return;
-        // setState(() {
-        //   loadingAnimation = false;
-        // });
         _replace(context, const HomePage());
       }
     } on AuthException catch (e) {

@@ -62,13 +62,13 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   /// Validates if the email matches a basic email pattern.
-  bool isValidEmail(String email) {
+  bool isValidEmail() {
     final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-    return emailRegex.hasMatch(email.trim());
+    return emailRegex.hasMatch(emailController.text.trim());
   }
 
   /// Validates password strength: at least 8 characters, with uppercase, lowercase, digit, and special character.
-  bool isValidPassword(String password) {
+  bool isValidPassword() {
     return charLength &&
         includeNum &&
         includeUpCse &&
@@ -77,30 +77,24 @@ class _SignUpPageState extends State<SignUpPage> {
         pwdMatch;
   }
 
-  void _onPasswordChanged(String password) {
-    setState(() {
-      charLength = password.length >= 8;
-      includeUpCse = RegExp(r'[A-Z]').hasMatch(password);
-      includeLwCse = RegExp(r'[a-z]').hasMatch(password);
-      includeNum = RegExp(r'\d').hasMatch(password);
-      includeSpCh = RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password);
-    });
-    _onPasswordMatched();
-  }
-
-  void _onPasswordMatched() {
+  void _onPasswordChanged(String value) {
     // New bug: tracks all field for the rest of password criteria
     // Example scenario: If change confirm password field where it doesn't match, it reset the state
     // for the rest of the password criteria
-    final passwordCtrl = passwordController;
-    final confirmCtrl = confirmController;
+    final password = passwordController;
+    final confirm = confirmController;
 
-    safePrint("Password match: $pwdMatch");
     setState(() {
+      charLength = password.text.length >= 8;
+      includeUpCse = RegExp(r'[A-Z]').hasMatch(password.text);
+      includeLwCse = RegExp(r'[a-z]').hasMatch(password.text);
+      includeNum = RegExp(r'\d').hasMatch(password.text);
+      includeSpCh = RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password.text);
+
       pwdMatch =
-          passwordCtrl.text.trim() == confirmCtrl.text.trim() &&
-          passwordCtrl.text.trim().isNotEmpty &&
-          confirmCtrl.text.trim().isNotEmpty;
+          password.text == confirm.text &&
+          password.text.isNotEmpty &&
+          confirm.text.isNotEmpty;
     });
   }
 
@@ -145,6 +139,9 @@ class _SignUpPageState extends State<SignUpPage> {
               email: emailController.text.trim(),
             ),
           );
+          setState(() {
+            loadingAnimation = false;
+          });
         }
       }
     } on AuthException catch (e) {
@@ -176,17 +173,17 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   // Check if provided user credential data is qualified for sign up process
-  bool isFormValidated(String email, String password, BuildContext context) {
-    if (isValidEmail(email) && (isValidPassword(password))) {
+  bool isFormValidated(BuildContext context) {
+    if (isValidEmail() && (isValidPassword())) {
       return true;
     }
 
     // Error dialogs based on various conditions
-    if (email.isEmpty || password.isEmpty) {
+    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
       _showDialogError(context, "Please enter all fields");
-    } else if (!isValidEmail(email)) {
+    } else if (!isValidEmail()) {
       _showDialogError(context, "Please enter a valid email address");
-    } else if (!isValidEmail(password)) {
+    } else if (!isValidPassword()) {
       _showDialogError(context, "Password must meet all criteria below");
     }
 
@@ -259,13 +256,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   text: 'Sign up',
                   onTap: () =>
                       // _open(context, VerifyEmailPage())
-                      isFormValidated(
-                        emailController.text.trim(),
-                        passwordController.text.trim(),
-                        context,
-                      )
-                      ? _register(context)
-                      : () {},
+                      isFormValidated(context) ? _register(context) : () {},
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(

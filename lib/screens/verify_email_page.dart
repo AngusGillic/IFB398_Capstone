@@ -74,7 +74,9 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
 
   // Verify function
   Future<void> _verifyCode(BuildContext context) async {
-    setState(() { loadingAnimation = true; });
+    setState(() {
+      loadingAnimation = true;
+    });
 
     final confirmCode = _getOTPCode();
     if (confirmCode.isEmpty)
