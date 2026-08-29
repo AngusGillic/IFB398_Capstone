@@ -78,9 +78,6 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   void _onPasswordChanged(String value) {
-    // New bug: tracks all field for the rest of password criteria
-    // Example scenario: If change confirm password field where it doesn't match, it reset the state
-    // for the rest of the password criteria
     final password = passwordController;
     final confirm = confirmController;
 
@@ -134,10 +131,12 @@ class _SignUpPageState extends State<SignUpPage> {
         if (mounted) {
           _replace(
             context,
-            VerifyEmailPage(
-              username: username,
-              email: emailController.text.trim(),
-            ),
+            // VerifyEmailPage(
+            //   username: username,
+            //   email: emailController.text.trim(),
+            // ),
+            // For debugging only
+            VerifyEmailPage(),
           );
           setState(() {
             loadingAnimation = false;
@@ -255,8 +254,9 @@ class _SignUpPageState extends State<SignUpPage> {
                 GreenButton(
                   text: 'Sign up',
                   onTap: () =>
-                      // _open(context, VerifyEmailPage())
-                      isFormValidated(context) ? _register(context) : () {},
+                      // For debugging only
+                      _open(context, VerifyEmailPage())
+                      // isFormValidated(context) ? _register(context) : () {},
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(

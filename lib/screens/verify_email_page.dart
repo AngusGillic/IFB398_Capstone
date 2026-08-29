@@ -13,12 +13,12 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 
 class VerifyEmailPage extends StatefulWidget {
-  final String username;
-  final String email;
+  // final String username;
+  // final String email;
 
   const VerifyEmailPage({
-    required this.username,
-    required this.email,
+    // required this.username,
+    // required this.email,
     super.key,
   });
 
@@ -29,7 +29,7 @@ class VerifyEmailPage extends StatefulWidget {
 class _VerifyEmailState extends State<VerifyEmailPage> {
   final List<TextEditingController> _otpCtrllers = List.generate(
     6,
-    (_) => TextEditingController(),
+    (_) => TextEditingController(text: "\u200b"),
   );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
@@ -66,6 +66,7 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
       // if new input is empty, focus to previous focusNode
       if (index > 0) {
         _focusNodes[index - 1].requestFocus();
+        _otpCtrllers[index].text = '\u200b';
       } else {
         FocusScope.of(context).unfocus();
       }
@@ -73,52 +74,52 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
   }
 
   // Verify function
-  Future<void> _verifyCode(BuildContext context) async {
-    setState(() {
-      loadingAnimation = true;
-    });
+  // Future<void> _verifyCode(BuildContext context) async {
+  //   setState(() {
+  //     loadingAnimation = true;
+  //   });
 
-    final confirmCode = _getOTPCode();
-    if (confirmCode.isEmpty)
-      _showDialogError(context, "Please enter verification code to register");
+  //   final confirmCode = _getOTPCode();
+  //   if (confirmCode.isEmpty)
+  //     _showDialogError(context, "Please enter verification code to register");
 
-    try {
-      final result = await Amplify.Auth.confirmSignUp(
-        username: widget.username,
-        confirmationCode: confirmCode,
-      );
+  //   try {
+  //     final result = await Amplify.Auth.confirmSignUp(
+  //       username: widget.username,
+  //       confirmationCode: confirmCode,
+  //     );
 
-      if (result.isSignUpComplete) {
-        if (mounted) {
-          showCupertinoDialog(
-            context: context,
-            builder: (context) => CupertinoAlertDialog(
-              title: const Text("Verfication Complete"),
-              content: Text("Welcome to Travelly! You are now a register user"),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text("Confirm"),
-                  isDefaultAction: true,
-                  onPressed: () {
-                    // Navigator.pop(context);
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (_) => const HomePage()),
-                    );
-                  },
-                ),
-              ],
-            ),
-          );
-        }
-      }
-    } on AuthException catch (e) {
-      safePrint('Error: ${e.toString()}');
-      final message = e.message;
-      _showDialogError(context, message);
-    } finally {
-      setState(() => loadingAnimation = false);
-    }
-  }
+  //     if (result.isSignUpComplete) {
+  //       if (mounted) {
+  //         showCupertinoDialog(
+  //           context: context,
+  //           builder: (context) => CupertinoAlertDialog(
+  //             title: const Text("Verfication Complete"),
+  //             content: Text("Welcome to Travelly! You are now a register user"),
+  //             actions: [
+  //               CupertinoDialogAction(
+  //                 child: const Text("Confirm"),
+  //                 isDefaultAction: true,
+  //                 onPressed: () {
+  //                   // Navigator.pop(context);
+  //                   Navigator.of(context).pushReplacement(
+  //                     MaterialPageRoute(builder: (_) => const HomePage()),
+  //                   );
+  //                 },
+  //               ),
+  //             ],
+  //           ),
+  //         );
+  //       }
+  //     }
+  //   } on AuthException catch (e) {
+  //     safePrint('Error: ${e.toString()}');
+  //     final message = e.message;
+  //     _showDialogError(context, message);
+  //   } finally {
+  //     setState(() => loadingAnimation = false);
+  //   }
+  // }
 
   // -------------------------------------FOR LATER DEVELOPMENT-------------------------------------
   // Future<void> resendCode() async {
@@ -204,6 +205,10 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
             'JohnDoe@email.com',
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
           ),
+          // Text(
+          //   widget.email,
+          //   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+          // ),
           const SizedBox(height: 38),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -224,8 +229,11 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
           const Spacer(),
           GreenButton(
             text: 'Verify',
-            // onTap: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage())),
-            onTap: () => _verifyCode(context),
+            // For debugging only
+            onTap: () => Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const HomePage()),
+            ),
+            // onTap: () => _verifyCode(context),
           ),
           const SizedBox(height: 18),
         ],
