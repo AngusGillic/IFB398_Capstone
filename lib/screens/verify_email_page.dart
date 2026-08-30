@@ -1,3 +1,6 @@
+import 'dart:ffi';
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -33,7 +36,10 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
   );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
+  // States
   bool loadingAnimation = false;
+  bool resendTimeOut = false;
+  int timeOutDuration = 30;
 
   @override
   void dispose() {
@@ -73,7 +79,7 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
     }
   }
 
-  // Verify function
+  // Verify OTP code function
   // Future<void> _verifyCode(BuildContext context) async {
   //   setState(() {
   //     loadingAnimation = true;
@@ -122,41 +128,78 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
   // }
 
   // -------------------------------------FOR LATER DEVELOPMENT-------------------------------------
-  // Future<void> resendCode() async {
-  //   // setState(() { isLoading = true; error = null; });
+  Future<void> _resendCode() async {
+    // setState(() { isLoading = true; error = null; });
+    setState(() {
+      resendTimeOut = true;
+    });
 
-  //   try {
-  //     await Amplify.Auth.resendSignUpCode(username: widget.username);
-  //     if (mounted) {
-  //       // ScaffoldMessenger.of(context).showSnackBar(
-  //       //   const SnackBar(content: Text('Confirmation code resent')),
-  //       // );
-  //       showCupertinoDialog(
-  //         context: context,
-  //         builder: (context) => CupertinoAlertDialog(
-  //           title: const Text("Verfication Code Resent"),
-  //           content: Text("Please check your email for new verfication code"),
-  //           actions: [
-  //             CupertinoDialogAction(
-  //               child: const Text("Okay"),
-  //               isDefaultAction: true,
-  //               onPressed: () {
-  //                 Navigator.pop(context);
-  //               },
-  //             )
-  //           ],
-  //         )
-  //       );
-  //     }
-  //   } on AuthException catch (e) {
-  //     safePrint('Error: ${e.toString()}');
-  //     final message = e.message;
-  //     _showDialogError(context, message);
-  //   }
-  //   //finally {
-  //   //   setState(() => isLoading = false);
-  //   // }
-  // }
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        // title: const Text("Verification code resent to ${widget.email}"),
+        title: const Text("Verification code resent"),
+        content: Text("Please check your email inbox and spam folder."),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text("Okay"),
+            isDefaultAction: true,
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
+
+    Timer.periodic(Duration(seconds: 1), (timer) {
+      // For debugging only
+      // safePrint(timer.tick);
+      setState(() {
+        timeOutDuration--;
+      });
+
+      if (timeOutDuration == 0) {
+        setState(() {
+          resendTimeOut = false;
+        });
+        timer.cancel();
+        timeOutDuration = 30;
+      }
+    });
+
+    // try {
+    //   await Amplify.Auth.resendSignUpCode(username: widget.username);
+    //   if (mounted) {
+    //     // ScaffoldMessenger.of(context).showSnackBar(
+    //     //   const SnackBar(content: Text('Confirmation code resent')),
+    //     // );
+    //     showCupertinoDialog(
+    //       context: context,
+    //       builder: (context) => CupertinoAlertDialog(
+    //         title: const Text("Verfication Code Resent"),
+    //         content: Text("Please check your email for new verfication code"),
+    //         actions: [
+    //           CupertinoDialogAction(
+    //             child: const Text("Okay"),
+    //             isDefaultAction: true,
+    //             onPressed: () {
+    //               Navigator.pop(context);
+    //             },
+    //           )
+    //         ],
+    //       )
+    //     );
+    //   }
+    // } on AuthException catch (e) {
+    //   safePrint('Error: ${e.toString()}');
+    //   final message = e.message;
+    //   _showDialogError(context, message);
+    // }
+    // //finally {
+    // //   setState(() => isLoading = false);
+    // // }
+  }
   // -------------------------------------FOR LATER DEVELOPMENT-------------------------------------
 
   void _showDialogError(BuildContext context, String message) {
@@ -222,10 +265,33 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Resend Code in 26 seconds',
-            style: TextStyle(fontSize: 11, color: AppColors.greyText),
-          ),
+          // Before: Resend code button
+          // After: Text with timer Resend code after x seconds
+          if (resendTimeOut == true)
+            Text(
+              'Resend Code in ${timeOutDuration} seconds',
+              style: TextStyle(fontSize: 11, color: AppColors.greyText),
+            )
+          else
+            GestureDetector(
+              // onTap: () => _open(context, const LoginPage()),
+              onTap: () => _resendCode(),
+              child: const Text.rich(
+                TextSpan(
+                  text: 'Did not receive your code? ',
+                  children: [
+                    TextSpan(
+                      text: 'Resend code',
+                      style: TextStyle(
+                        color: AppColors.green,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+                style: TextStyle(fontSize: 12),
+              ),
+            ),
           const Spacer(),
           GreenButton(
             text: 'Verify',
