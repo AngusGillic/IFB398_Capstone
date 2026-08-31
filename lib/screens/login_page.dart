@@ -148,7 +148,10 @@ class _LoginPageState extends State<LoginPage> {
                   // onTap: () => _replace(
                   //   context, const HomePage()
                   // )
-                  onTap: () => _login(context),
+                  onTap: () => {
+                    _login(context),
+                    FocusManager.instance.primaryFocus?.unfocus()
+                  },
                 ),
                 const SizedBox(height: 30),
                 const Row(

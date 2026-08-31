@@ -129,7 +129,9 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
 
   // -------------------------------------FOR LATER DEVELOPMENT-------------------------------------
   Future<void> _resendCode() async {
-    // setState(() { isLoading = true; error = null; });
+    setState(() {
+      loadingAnimation = true;
+    });
     setState(() {
       resendTimeOut = true;
     });
@@ -186,19 +188,18 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
     //             onPressed: () {
     //               Navigator.pop(context);
     //             },
-    //           )
+    //           ),
     //         ],
-    //       )
+    //       ),
     //     );
     //   }
     // } on AuthException catch (e) {
     //   safePrint('Error: ${e.toString()}');
     //   final message = e.message;
     //   _showDialogError(context, message);
+    // } finally {
+    //   setState(() => isLoading = false);
     // }
-    // //finally {
-    // //   setState(() => isLoading = false);
-    // // }
   }
   // -------------------------------------FOR LATER DEVELOPMENT-------------------------------------
 

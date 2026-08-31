@@ -256,7 +256,10 @@ class _SignUpPageState extends State<SignUpPage> {
                   onTap: () =>
                       // For debugging only
                       _open(context, VerifyEmailPage())
-                      // isFormValidated(context) ? _register(context) : () {},
+                      // isFormValidated(context) ? {
+                      //   _register(context),
+                      //   FocusManager.instance.primaryFocus?.unfocus()
+                      // } : () {},
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(

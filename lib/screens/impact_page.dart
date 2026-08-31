@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 import '../data/user_data.dart';
 import '../ui/entrance.dart';
@@ -7,6 +8,8 @@ import '../ui/glass_widgets.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/card_panels.dart';
 import '../widgets/charts.dart';
+
+import '../screens/home_page.dart';
 
 class ImpactPage extends StatefulWidget {
   const ImpactPage({super.key});
@@ -29,6 +32,10 @@ class _ImpactPageState extends State<ImpactPage> {
     }
     return '${remaining.toStringAsFixed(1)} kg to reach your '
         '${_range.periodNoun} goal.';
+  }
+
+  void _open(BuildContext context, Widget page) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
   }
 
   @override
@@ -67,7 +74,15 @@ class _ImpactPageState extends State<ImpactPage> {
           MediaQuery.paddingOf(context).bottom + AppShell.navHeight + LGGap.section,
         ),
         children: [
-          Entrance(index: 0, child: const BackTitle(title: 'Your impact')),
+          Entrance(
+            index: 0, 
+            child: BackTitle(
+              title: 'Your impact', 
+              onBackTap: () {
+                _open(context, const HomePage());
+              }
+            )
+          ),
 
           Entrance(index: 1, child: GlassSegmented<ImpactRange>(
             groupValue: _range,
