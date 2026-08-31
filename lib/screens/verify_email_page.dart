@@ -16,12 +16,12 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 
 class VerifyEmailPage extends StatefulWidget {
-  // final String username;
-  // final String email;
+  final String username;
+  final String email;
 
   const VerifyEmailPage({
-    // required this.username,
-    // required this.email,
+    required this.username,
+    required this.email,
     super.key,
   });
 
@@ -80,52 +80,53 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
   }
 
   // Verify OTP code function
-  // Future<void> _verifyCode(BuildContext context) async {
-  //   setState(() {
-  //     loadingAnimation = true;
-  //   });
+  Future<void> _verifyCode(BuildContext context) async {
+    setState(() {
+      loadingAnimation = true;
+    });
 
-  //   final confirmCode = _getOTPCode();
-  //   if (confirmCode.isEmpty)
-  //     _showDialogError(context, "Please enter verification code to register");
+    final confirmCode = _getOTPCode();
+    if (confirmCode.isEmpty)
+      _showDialogError(context, "Please enter verification code to register");
 
-  //   try {
-  //     final result = await Amplify.Auth.confirmSignUp(
-  //       username: widget.username,
-  //       confirmationCode: confirmCode,
-  //     );
+    try {
+      final result = await Amplify.Auth.confirmSignUp(
+        username: widget.username,
+        // username: "mentosman202_gmail_com",
+        confirmationCode: confirmCode,
+      );
 
-  //     if (result.isSignUpComplete) {
-  //       if (mounted) {
-  //         showCupertinoDialog(
-  //           context: context,
-  //           builder: (context) => CupertinoAlertDialog(
-  //             title: const Text("Verfication Complete"),
-  //             content: Text("Welcome to Travelly! You are now a register user"),
-  //             actions: [
-  //               CupertinoDialogAction(
-  //                 child: const Text("Confirm"),
-  //                 isDefaultAction: true,
-  //                 onPressed: () {
-  //                   // Navigator.pop(context);
-  //                   Navigator.of(context).pushReplacement(
-  //                     MaterialPageRoute(builder: (_) => const HomePage()),
-  //                   );
-  //                 },
-  //               ),
-  //             ],
-  //           ),
-  //         );
-  //       }
-  //     }
-  //   } on AuthException catch (e) {
-  //     safePrint('Error: ${e.toString()}');
-  //     final message = e.message;
-  //     _showDialogError(context, message);
-  //   } finally {
-  //     setState(() => loadingAnimation = false);
-  //   }
-  // }
+      if (result.isSignUpComplete) {
+        if (mounted) {
+          showCupertinoDialog(
+            context: context,
+            builder: (context) => CupertinoAlertDialog(
+              title: const Text("Verfication Complete"),
+              content: Text("Welcome to Travelly! You are now a register user"),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text("Confirm"),
+                  isDefaultAction: true,
+                  onPressed: () {
+                    // Navigator.pop(context);
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (_) => const HomePage()),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    } on AuthException catch (e) {
+      safePrint('Error: ${e.toString()}');
+      final message = e.message;
+      _showDialogError(context, message);
+    } finally {
+      setState(() => loadingAnimation = false);
+    }
+  }
 
   // -------------------------------------FOR LATER DEVELOPMENT-------------------------------------
   Future<void> _resendCode() async {
@@ -170,36 +171,33 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
       }
     });
 
-    // try {
-    //   await Amplify.Auth.resendSignUpCode(username: widget.username);
-    //   if (mounted) {
-    //     // ScaffoldMessenger.of(context).showSnackBar(
-    //     //   const SnackBar(content: Text('Confirmation code resent')),
-    //     // );
-    //     showCupertinoDialog(
-    //       context: context,
-    //       builder: (context) => CupertinoAlertDialog(
-    //         title: const Text("Verfication Code Resent"),
-    //         content: Text("Please check your email for new verfication code"),
-    //         actions: [
-    //           CupertinoDialogAction(
-    //             child: const Text("Okay"),
-    //             isDefaultAction: true,
-    //             onPressed: () {
-    //               Navigator.pop(context);
-    //             },
-    //           ),
-    //         ],
-    //       ),
-    //     );
-    //   }
-    // } on AuthException catch (e) {
-    //   safePrint('Error: ${e.toString()}');
-    //   final message = e.message;
-    //   _showDialogError(context, message);
-    // } finally {
-    //   setState(() => isLoading = false);
-    // }
+    try {
+      await Amplify.Auth.resendSignUpCode(username: widget.username);
+      if (mounted) {
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text("Verfication Code Resent"),
+            content: Text("Please check your email for new verfication code"),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text("Okay"),
+                isDefaultAction: true,
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      }
+    } on AuthException catch (e) {
+      safePrint('Error: ${e.toString()}');
+      final message = e.message;
+      _showDialogError(context, message);
+    } finally {
+      setState(() => loadingAnimation = false);
+    }
   }
   // -------------------------------------FOR LATER DEVELOPMENT-------------------------------------
 
@@ -245,14 +243,16 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
             'Enter the 6-digit code sent to',
             style: TextStyle(fontSize: 12, color: AppColors.greyText),
           ),
-          const Text(
-            'JohnDoe@email.com',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
-          ),
-          // Text(
-          //   widget.email,
+          // ----------------------- Static example -------------------------------------------------
+          // const Text(
+          //   'JohnDoe@email.com',
           //   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
           // ),
+          // ----------------------------------------------------------------------------------------
+          Text(
+            widget.email,
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 38),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -297,10 +297,10 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
           GreenButton(
             text: 'Verify',
             // For debugging only
-            onTap: () => Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const HomePage()),
-            ),
-            // onTap: () => _verifyCode(context),
+            // onTap: () => Navigator.of(context).pushReplacement(
+            //   MaterialPageRoute(builder: (_) => const HomePage()),
+            // ),
+            onTap: () => _verifyCode(context),
           ),
           const SizedBox(height: 18),
         ],

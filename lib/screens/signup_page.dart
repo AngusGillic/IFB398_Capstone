@@ -131,12 +131,12 @@ class _SignUpPageState extends State<SignUpPage> {
         if (mounted) {
           _replace(
             context,
-            // VerifyEmailPage(
-            //   username: username,
-            //   email: emailController.text.trim(),
-            // ),
+            VerifyEmailPage(
+              username: username,
+              email: emailController.text.trim(),
+            ),
             // For debugging only
-            VerifyEmailPage(),
+            // VerifyEmailPage(),
           );
           setState(() {
             loadingAnimation = false;
@@ -255,11 +255,11 @@ class _SignUpPageState extends State<SignUpPage> {
                   text: 'Sign up',
                   onTap: () =>
                       // For debugging only
-                      _open(context, VerifyEmailPage())
-                      // isFormValidated(context) ? {
-                      //   _register(context),
-                      //   FocusManager.instance.primaryFocus?.unfocus()
-                      // } : () {},
+                      // _open(context, VerifyEmailPage())
+                      isFormValidated(context) ? {
+                        _register(context),
+                        FocusManager.instance.primaryFocus?.unfocus()
+                      } : () {},
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(

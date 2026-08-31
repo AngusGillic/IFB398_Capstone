@@ -58,7 +58,7 @@ class _LoginPageState extends State<LoginPage> {
         password: passwordController.text,
       );
       if (result.isSignedIn) {
-        // Isolate local data (groups, points, trips filter) to this Cognito sub.
+        // (?)Isolate local data (groups, points, trips filter) to this Cognito sub.
         await UserDataSession.onAuthenticated();
         if (!mounted) return;
         _replace(context, const HomePage());
