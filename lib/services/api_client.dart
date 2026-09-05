@@ -43,7 +43,8 @@ class ApiClient {
     //   safePrint(data.toList());
     // }
 
-    final List<AuthUserAttribute> attributes = await Amplify.Auth.fetchUserAttributes();
+    // final List<AuthUserAttribute> attributes = await Amplify.Auth.fetchUserAttributes();
+    final attributes = await Amplify.Auth.fetchUserAttributes();
 
     final email = attributes.firstWhere(
       (element) => element.userAttributeKey == CognitoUserAttributeKey.email,
@@ -53,23 +54,26 @@ class ApiClient {
     );
       
     final String fullName;
-    
+
     if (email != "n/a") {
-      fullName = UsernameMapper.displayNameFrom(email.toString());      
+      fullName = UsernameMapper.displayNameFrom(email.value);      
     } else {
       fullName = "n/a";
     }
+    safePrint("email variable: ${fullName}");
 
     Map<String, dynamic> userMap = {
       "profile": {
-        "first_name": "ChocolateMandarin",
+        "first_name": "Chocolate Mandarin",
         "full_name": fullName,
-        "email": (attributes.firstWhere(
-          (element) => element.userAttributeKey == CognitoUserAttributeKey.email,
-          orElse:() => const AuthUserAttribute(
-            userAttributeKey: CognitoUserAttributeKey.email, value: "n/a",
-          ),
-        )).toString(),
+        "email": (
+            attributes.firstWhere(
+              (element) => element.userAttributeKey == CognitoUserAttributeKey.email,
+              orElse:() => const AuthUserAttribute(
+                userAttributeKey: CognitoUserAttributeKey.email, value: "n/a",
+              ),
+            )
+        ).value,
         "member_since": "2026-03-27",
       },
       "impact": {
