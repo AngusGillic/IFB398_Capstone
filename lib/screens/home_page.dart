@@ -1,4 +1,7 @@
+import 'package:amplify_api/amplify_api.dart';
+import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:travelly_flutter_ios_style/models/ModelProvider.dart';
 
 import '../data/user_data.dart';
 import '../ui/entrance.dart';
@@ -9,12 +12,52 @@ import '../widgets/card_panels.dart';
 import '../widgets/mock_painters.dart';
 import 'impact_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState () => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<EcoGroup> _arrayTest = [];
 
   void _open(BuildContext context, Widget page) {
     Navigator.of(context).push(CupertinoPageRoute(builder: (_) => page));
   }
+
+  // void initState() {
+  //   super.initState();
+  //   _spawnDataDynamo();
+  // }
+
+  // // This function is for debugging only 
+  // Future<void> _spawnDataDynamo() async {
+  //   try {
+  //     final request = ModelQueries.list(EcoGroup.classType);
+  //     final response = await Amplify.API.query(request: request).response;
+
+  //     final result = response.data?.items;
+  //     if (response.hasErrors) {
+  //       safePrint("errors: ${response.errors}");
+  //       return;
+  //     }
+
+  //     setState(() {
+  //       // safePrint(result);
+  //       _arrayTest = result!.whereType<EcoGroup>().toList();
+  //     });
+
+  //     safePrint("Loading data from DynamoDB...");
+
+  //     for (EcoGroup item in _arrayTest) {
+  //       safePrint(item);
+  //     }
+
+  //   } on ApiException catch(e) {
+  //     safePrint("Query Failed: $e");
+  //   }
+  // }
 
   String get _greeting {
     final hour = DateTime.now().hour;
@@ -27,6 +70,9 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final secondary = LGColor.resolve(LGColor.secondaryLabel, context);
     final data = AppData.current;
+    final data2 = AppData.instance.load();
+
+    safePrint(data2);
 
     return AppShell(
       showBottomNav: true,
@@ -48,7 +94,7 @@ class HomePage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('$_greeting, John', style: LGText.largeTitle(context)),
+                    Text('$_greeting, ${data.profile.firstName}', style: LGText.largeTitle(context)),
                     const SizedBox(height: LGGap.xxs),
                     Text(
                       "Let's get green",
@@ -63,7 +109,9 @@ class HomePage extends StatelessWidget {
                 semanticLabel: 'Notifications',
                 size: 40,
                 iconSize: 17,
-                onPressed: () {},
+                onPressed: () {
+                  // _spawnDataDynamo();
+                },
               ),
             ],
           )),

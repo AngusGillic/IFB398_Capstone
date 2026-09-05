@@ -1,6 +1,8 @@
+import 'package:amplify_api/amplify_api.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show DefaultMaterialLocalizations, Material, MaterialType;
 import 'package:flutter/services.dart';
+import 'package:travelly_flutter_ios_style/data/user_data.dart';
 
 import 'screens/bus_routes_screen.dart';
 import 'screens/welcome_page.dart';
@@ -11,6 +13,7 @@ import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 
 import 'widgets/amplifyconfiguration.dart';
+import './models/ModelProvider.dart';
 
 
 const String kStartScreen = String.fromEnvironment('START');
@@ -30,6 +33,8 @@ void main() async{
     systemNavigationBarDividerColor: Color(0x00000000),
   ));
 
+  AppData.instance.load();
+
   runApp(const TravellyApp());
 }
 
@@ -37,7 +42,14 @@ void main() async{
 Future<void> _configureAmplify() async {
   try {
     await Amplify.addPlugin(AmplifyAuthCognito());
+
+    final api = AmplifyAPI(
+      options: APIPluginOptions(modelProvider: ModelProvider.instance)
+    );
+    await Amplify.addPlugin(api);
+
     await Amplify.configure(amplifyconfig);
+
     safePrint('Successfully configured');
   } on Exception catch (e) {
     safePrint('Error configuring Amplify: $e');

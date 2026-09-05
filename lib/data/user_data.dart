@@ -1,4 +1,6 @@
+import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/foundation.dart';
+import '../services/api_client.dart';
 
 // ===========================================================================
 //  EVERY USER STAT IN THE APP LIVES IN THIS FILE.
@@ -9,8 +11,8 @@ import 'package:flutter/foundation.dart';
 //  Screens listen to AppData.instance, so they refresh on their own.
 // ===========================================================================
 
-class UserProfile {
-  const UserProfile({
+class LocalProfile {
+  const LocalProfile({
     required this.firstName,
     required this.fullName,
     required this.email,
@@ -195,7 +197,7 @@ class UserData {
     required this.challenge,
   });
 
-  final UserProfile profile;
+  final LocalProfile profile;
 
   /// Missing ranges fall back to [ImpactSeries.empty].
   final Map<ImpactRange, ImpactSeries> impact;
@@ -218,7 +220,8 @@ const bool kEmptyData = bool.fromEnvironment('EMPTY_DATA');
 /// Single source of truth. Wrap widgets in a ValueListenableBuilder to rebuild
 /// when it changes.
 class AppData extends ValueNotifier<UserData> {
-  AppData._() : super(kEmptyData ? empty : _mock);
+  // AppData._() : super(kEmptyData ? empty : _mock);
+  AppData._() : super(empty);
 
   static final AppData instance = AppData._();
 
@@ -226,9 +229,9 @@ class AppData extends ValueNotifier<UserData> {
 
   /// Everything at zero, for first launch and while loading.
   static final UserData empty = UserData(
-    profile: UserProfile(
-      firstName: 'there',
-      fullName: '',
+    profile: LocalProfile(
+      firstName: 'Peter',
+      fullName: 'Peter Parker',
       email: '',
       memberSince: DateTime.now(),
     ),
@@ -253,109 +256,121 @@ class AppData extends ValueNotifier<UserData> {
 
   /// Fetch the signed-in user's figures. See BACKEND.md.
   Future<void> load() async {
-    // value = await ApiClient.fetchUserData();
+    safePrint("Here comes the ApiClient data...");
+    value = await ApiClient.fetchUserData();
+    // safePrint();
   }
 
   void update(UserData data) => value = data;
 }
 
+    // For Later
+      // final user = await Amplify.Auth.getCurrentUser();
+    // safePrint("Signed in as ${user.userId}");
+    // final results = await Amplify.Auth.fetchUserAttributes();
+    // for (final attribute in results) {
+    //   if (attribute.userAttributeKey == CognitoUserAttributeKey.email)
+    //     empty.profile.email = attribute.value;
+    // }
+
 // ---------------------------------------------------------------------------
 //  MOCK VALUES — delete once load() is wired up.
 // ---------------------------------------------------------------------------
 
-final UserData _mock = UserData(
-  profile: UserProfile(
-    firstName: 'John',
-    fullName: 'John Doe',
-    email: 'john.doe@example.com',
-    memberSince: DateTime(2026, 5, 2),
-  ),
-  impact: const {
-    ImpactRange.week: ImpactSeries(
-      co2SavedKg: 2.4,
-      goalKg: 3.5,
-      values: [0.2, 0.45, 0.3, 0.55, 0.4, 0.1, 0.5],
-      labels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
-      byMode: {'Transit': 1.8, 'Walking': 0.4, 'Cycling': 0.2},
-      greenKm: 18.6,
-      drivenKm: 4.2,
-      changeVsPrevious: 0.38,
-      trips: 10,
-    ),
-    ImpactRange.month: ImpactSeries(
-      co2SavedKg: 9.8,
-      goalKg: 14,
-      values: [2.1, 2.4, 2.9, 2.4],
-      labels: ['W1', 'W2', 'W3', 'W4'],
-      byMode: {'Transit': 6.9, 'Walking': 1.9, 'Cycling': 1.0},
-      greenKm: 74.2,
-      drivenKm: 21.5,
-      changeVsPrevious: 0.12,
-      trips: 41,
-    ),
-    ImpactRange.year: ImpactSeries(
-      co2SavedKg: 52,
-      goalKg: 90,
-      values: [3.1, 4.0, 4.8, 5.2, 4.4, 3.9, 4.6, 5.1, 4.2, 4.5, 4.0, 4.2],
-      labels: ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'],
-      byMode: {'Transit': 36.4, 'Walking': 9.8, 'Cycling': 5.8},
-      greenKm: 331.0,
-      drivenKm: 81.7,
-      changeVsPrevious: 0.24,
-      trips: 148,
-    ),
-  },
-  lifetime: const LifetimeImpact(
-    co2SavedKg: 52,
-    totalTrips: 148,
-    totalKm: 412.7,
-  ),
-  pet: const PetStats(
-    coins: 200,
-    happiness: 0.82,
-    energy: 0.64,
-    health: 0.95,
-    daysTogether: 38,
-  ),
-  suggestions: const [
-    SuggestedTrip(
-      label: 'Work',
-      mode: 'Bus 150',
-      durationMinutes: 22,
-      co2SavedKg: 0.8,
-      leaveAt: '8:18am',
-      arriveAt: '8:40am',
-    ),
-    SuggestedTrip(
-      label: 'Gym',
-      mode: 'Walk',
-      durationMinutes: 14,
-      co2SavedKg: 0.4,
-      leaveAt: '5:30pm',
-      arriveAt: '5:44pm',
-    ),
-    SuggestedTrip(
-      label: 'Southbank',
-      mode: 'Ferry',
-      durationMinutes: 18,
-      co2SavedKg: 0.6,
-      leaveAt: '11:05am',
-      arriveAt: '11:23am',
-    ),
-    SuggestedTrip(
-      label: 'Home',
-      mode: 'Bus 412',
-      durationMinutes: 26,
-      co2SavedKg: 0.9,
-      leaveAt: '6:02pm',
-      arriveAt: '6:28pm',
-    ),
-  ],
-  challenge: const Challenge(
-    title: 'Green Week Walk Challenge',
-    daysDone: 4,
-    daysTotal: 7,
-    steps: 2000,
-    stepGoal: 4000,
-  ),
-);
+// final UserData _mock = UserData(
+//   profile: LocalProfile(
+//     firstName: 'John',
+//     fullName: 'John Doe',
+//     email: 'john.doe@example.com',
+//     memberSince: DateTime(2026, 5, 2),
+//   ),
+//   impact: const {
+//     ImpactRange.week: ImpactSeries(
+//       co2SavedKg: 2.4,
+//       goalKg: 3.5,
+//       values: [0.2, 0.45, 0.3, 0.55, 0.4, 0.1, 0.5],
+//       labels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
+//       byMode: {'Transit': 1.8, 'Walking': 0.4, 'Cycling': 0.2},
+//       greenKm: 18.6,
+//       drivenKm: 4.2,
+//       changeVsPrevious: 0.38,
+//       trips: 10,
+//     ),
+//     ImpactRange.month: ImpactSeries(
+//       co2SavedKg: 9.8,
+//       goalKg: 14,
+//       values: [2.1, 2.4, 2.9, 2.4],
+//       labels: ['W1', 'W2', 'W3', 'W4'],
+//       byMode: {'Transit': 6.9, 'Walking': 1.9, 'Cycling': 1.0},
+//       greenKm: 74.2,
+//       drivenKm: 21.5,
+//       changeVsPrevious: 0.12,
+//       trips: 41,
+//     ),
+//     ImpactRange.year: ImpactSeries(
+//       co2SavedKg: 52,
+//       goalKg: 90,
+//       values: [3.1, 4.0, 4.8, 5.2, 4.4, 3.9, 4.6, 5.1, 4.2, 4.5, 4.0, 4.2],
+//       labels: ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'],
+//       byMode: {'Transit': 36.4, 'Walking': 9.8, 'Cycling': 5.8},
+//       greenKm: 331.0,
+//       drivenKm: 81.7,
+//       changeVsPrevious: 0.24,
+//       trips: 148,
+//     ),
+//   },
+//   lifetime: const LifetimeImpact(
+//     co2SavedKg: 52,
+//     totalTrips: 148,
+//     totalKm: 412.7,
+//   ),
+//   pet: const PetStats(
+//     coins: 200,
+//     happiness: 0.82,
+//     energy: 0.64,
+//     health: 0.95,
+//     daysTogether: 38,
+//   ),
+//   suggestions: const [
+//     SuggestedTrip(
+//       label: 'Work',
+//       mode: 'Bus 150',
+//       durationMinutes: 22,
+//       co2SavedKg: 0.8,
+//       leaveAt: '8:18am',
+//       arriveAt: '8:40am',
+//     ),
+//     SuggestedTrip(
+//       label: 'Gym',
+//       mode: 'Walk',
+//       durationMinutes: 14,
+//       co2SavedKg: 0.4,
+//       leaveAt: '5:30pm',
+//       arriveAt: '5:44pm',
+//     ),
+//     SuggestedTrip(
+//       label: 'Southbank',
+//       mode: 'Ferry',
+//       durationMinutes: 18,
+//       co2SavedKg: 0.6,
+//       leaveAt: '11:05am',
+//       arriveAt: '11:23am',
+//     ),
+//     SuggestedTrip(
+//       label: 'Home',
+//       mode: 'Bus 412',
+//       durationMinutes: 26,
+//       co2SavedKg: 0.9,
+//       leaveAt: '6:02pm',
+//       arriveAt: '6:28pm',
+//     ),
+//   ],
+//   challenge: const Challenge(
+//     title: 'Green Week Walk Challenge',
+//     daysDone: 4,
+//     daysTotal: 7,
+//     steps: 2000,
+//     stepGoal: 4000,
+//   ),
+// );
+

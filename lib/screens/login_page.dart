@@ -61,6 +61,7 @@ class _LoginPageState extends State<LoginPage> {
         // (?)Isolate local data (groups, points, trips filter) to this Cognito sub.
         await UserDataSession.onAuthenticated();
         if (!mounted) return;
+        // safePrint("Attributes of Logged in user: ${Amplify.Auth.fetchUserAttributes().toString()}");
         _replace(context, const HomePage());
       }
     } on AuthException catch (e) {
