@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:travelly_flutter_ios_style/data/user_data.dart';
 
 import '../theme/app_colors.dart';
 import '../widgets/app_scaffold.dart';
@@ -61,8 +62,9 @@ class _LoginPageState extends State<LoginPage> {
         // (?)Isolate local data (groups, points, trips filter) to this Cognito sub.
         await UserDataSession.onAuthenticated();
         if (!mounted) return;
-        // safePrint("Attributes of Logged in user: ${Amplify.Auth.fetchUserAttributes().toString()}");
-        _replace(context, const HomePage());
+        safePrint("Attributes of Logged in user: ${Amplify.Auth.fetchUserAttributes().toString()}");
+        await AppData.instance.load();
+        _replace(context, HomePage());
       }
     } on AuthException catch (e) {
       safePrint('Error: ${e.toString()}');

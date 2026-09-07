@@ -70,9 +70,13 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final secondary = LGColor.resolve(LGColor.secondaryLabel, context);
     final data = AppData.current;
-    final data2 = AppData.instance.load();
+    // final data2 = AppData.instance.update(data);
+    // final data = AppData.instance.load();
+    // final data3 = AppData.current;
 
-    safePrint(data2);
+    // safePrint(data2);
+    // safePrint(data.toString());
+    
 
     return AppShell(
       showBottomNav: true,

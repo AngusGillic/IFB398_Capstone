@@ -122,7 +122,7 @@ class UserDataSession {
       final session = await Amplify.Auth.fetchAuthSession();
       if (!session.isSignedIn) return null;
       final attrs = await Amplify.Auth.fetchUserAttributes();
-      safePrint(attrs);
+      // safePrint(attrs);
       for (final a in attrs) {
         if (a.userAttributeKey == CognitoUserAttributeKey.sub) {
           return a.value;

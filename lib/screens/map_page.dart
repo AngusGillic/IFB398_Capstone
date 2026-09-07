@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart' show LatLng;
+// import 'package:flutter_map/flutter_map.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
+// import 'package:latlong2/latlong.dart' show LatLng;
 
 import '../services/geo_service.dart';
 import '../services/maps_config.dart';
@@ -38,12 +40,15 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
-  final _mapController = MapController();
+  // final _mapController = MapController();
+  late GoogleMapController _mapController;
   final _originCtrl = TextEditingController(text: 'Current location');
   final _destCtrl = TextEditingController();
   final _destFocus = FocusNode();
 
   static final _origin = LatLng(MapsConfig.defaultLat, MapsConfig.defaultLng);
+
+  final LatLng _center = const LatLng(-33.86, 151.20);
 
   TravelMode _mode = TravelMode.transit;
   Timer? _debounce;
@@ -56,10 +61,12 @@ class _MapPageState extends State<MapPage> {
   bool _searching = false;
   bool _routing = false;
   String? _error;
+  bool _mapPermission = false;
 
   @override
   void initState() {
     super.initState();
+    _requestMapPermission();
     _destFocus.addListener(() {
       if (_destFocus.hasFocus) setState(() => _expanded = true);
     });
@@ -73,6 +80,10 @@ class _MapPageState extends State<MapPage> {
     _destCtrl.dispose();
     _destFocus.dispose();
     super.dispose();
+  }
+
+  void _onMapCreated(GoogleMapController controller) {
+    _mapController = controller;
   }
 
   /// Nominatim asks for no more than one request a second.
@@ -98,52 +109,64 @@ class _MapPageState extends State<MapPage> {
     });
   }
 
-  Future<void> _selectPlace(Place place) async {
-    FocusScope.of(context).unfocus();
-    _destCtrl.removeListener(_onQueryChanged);
-    _destCtrl.text = place.name;
-    _destCtrl.addListener(_onQueryChanged);
+  Future<void> _requestMapPermission() async {
+    var status = await Permission.locationWhenInUse.request();
 
-    setState(() {
-      _destination = place;
-      _suggestions = const [];
-      _routing = true;
-      _error = null;
-    });
-
-    try {
-      final result = await GeoService.route(_origin, place.point);
-      if (!mounted) return;
-
-      setState(() => _route = result);
-
-      if (result != null && result.points.isNotEmpty) {
-        _mapController.fitCamera(
-          CameraFit.coordinates(
-            coordinates: result.points,
-            padding: const EdgeInsets.fromLTRB(50, 160, 50, 320),
-          ),
-        );
-      }
-    } catch (_) {
-      if (mounted) setState(() => _error = 'Routing unavailable');
-    } finally {
-      if (mounted) setState(() => _routing = false);
+    if (status.isGranted) {
+      setState(() {
+        _mapPermission = true;
+      });
+    } else if (status.isDenied) {
+      openAppSettings();
     }
   }
 
-  void _reset() {
-    FocusScope.of(context).unfocus();
-    setState(() {
-      _destCtrl.clear();
-      _destination = null;
-      _route = null;
-      _suggestions = const [];
-      _expanded = false;
-      _error = null;
-    });
-    _mapController.move(_origin, MapsConfig.defaultZoom);
-  }
+  // Future<void> _selectPlace(Place place) async {
+  //   FocusScope.of(context).unfocus();
+  //   _destCtrl.removeListener(_onQueryChanged);
+  //   _destCtrl.text = place.name;
+  //   _destCtrl.addListener(_onQueryChanged);
+
+  //   setState(() {
+  //     _destination = place;
+  //     _suggestions = const [];
+  //     _routing = true;
+  //     _error = null;
+  //   });
+
+  //   try {
+  //     final result = await GeoService.route(_origin, place.point);
+  //     if (!mounted) return;
+
+  //     setState(() => _route = result);
+
+  //     if (result != null && result.points.isNotEmpty) {
+  //       _mapController.fitCamera(
+  //         CameraFit.coordinates(
+  //           coordinates: result.points,
+  //           padding: const EdgeInsets.fromLTRB(50, 160, 50, 320),
+  //         ),
+  //       );
+  //     }
+  //   } catch (_) {
+  //     if (mounted) setState(() => _error = 'Routing unavailable');
+  //   } finally {
+  //     if (mounted) setState(() => _routing = false);
+  //   }
+  // }
+
+  // void _reset() {
+  //   FocusScope.of(context).unfocus();
+  //   setState(() {
+  //     _destCtrl.clear();
+  //     _destination = null;
+  //     _route = null;
+  //     _suggestions = const [];
+  //     _expanded = false;
+  //     _error = null;
+  //   });
+  //   _mapController.move(_origin, MapsConfig.defaultZoom);
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -160,137 +183,150 @@ class _MapPageState extends State<MapPage> {
       child: Stack(
         children: [
           Positioned.fill(
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: _origin,
-                initialZoom: MapsConfig.defaultZoom,
-                onTap: (_, __) => FocusScope.of(context).unfocus(),
+            child: GoogleMap(
+              onMapCreated: _onMapCreated,
+              initialCameraPosition: CameraPosition(
+                target: _center,
+                zoom: 11.0,
               ),
-              children: [
-                TileLayer(
-                  urlTemplate: MapsConfig.tileUrl,
-                  userAgentPackageName: MapsConfig.userAgent,
-                  maxNativeZoom: 19,
-                ),
-                if (_route != null)
-                  PolylineLayer(
-                    polylines: [
-                      Polyline(
-                        points: _route!.points,
-                        strokeWidth: 6,
-                        color: accent,
-                        borderStrokeWidth: 2,
-                        borderColor: const Color(0x33FFFFFF),
-                      ),
-                    ],
-                  ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: _origin,
-                      width: 22,
-                      height: 22,
-                      child: const _OriginDot(),
-                    ),
-                    if (_destination != null)
-                      Marker(
-                        point: _destination!.point,
-                        width: 34,
-                        height: 34,
-                        child: _DestinationPin(color: accent),
-                      ),
-                  ],
-                ),
-              ],
+              markers: {
+                const Marker(
+                  markerId: MarkerId('Sydney'),
+                  position: LatLng(-33.86, 151.20),
+                )
+              },
+              // Crucial: Only enable the MyLocation layer if permission is granted
+              myLocationEnabled: _mapPermission,
+              myLocationButtonEnabled: _mapPermission,
+              // options: MapOptions(
+              //   initialCenter: _origin,
+              //   initialZoom: MapsConfig.defaultZoom,
+              //   onTap: (_, __) => FocusScope.of(context).unfocus(),
+              // ),
+              // children: [
+              //   TileLayer(
+              //     urlTemplate: MapsConfig.tileUrl,
+              //     userAgentPackageName: MapsConfig.userAgent,
+              //     maxNativeZoom: 19,
+              //   ),
+              //   if (_route != null)
+              //     PolylineLayer(
+              //       polylines: [
+              //         Polyline(
+              //           points: _route!.points,
+              //           strokeWidth: 6,
+              //           color: accent,
+              //           borderStrokeWidth: 2,
+              //           borderColor: const Color(0x33FFFFFF),
+              //         ),
+              //       ],
+              //     ),
+                // MarkerLayer(
+                //   markers: [
+                //     Marker(
+                //       point: _origin,
+                //       width: 22,
+                //       height: 22,
+                //       child: const _OriginDot(),
+                //     ),
+                //     if (_destination != null)
+                //       Marker(
+                //         point: _destination!.point,
+                //         width: 34,
+                //         height: 34,
+                //         child: _DestinationPin(color: accent),
+                //       ),
+                //   ],
+                // ),
+              // ],
             ),
           ),
 
-          Positioned(
-            top: top + LGGap.md,
-            left: LGGap.xl,
-            right: LGGap.xl,
-            child: _SearchCard(
-              originCtrl: _originCtrl,
-              destCtrl: _destCtrl,
-              destFocus: _destFocus,
-              expanded: _expanded,
-              searching: _searching,
-              suggestions: _suggestions,
-              onSelect: _selectPlace,
-              onClear: _reset,
-            ),
-          ),
+          // Positioned(
+          //   top: top + LGGap.md,
+          //   left: LGGap.xl,
+          //   right: LGGap.xl,
+          //   child: _SearchCard(
+          //     originCtrl: _originCtrl,
+          //     destCtrl: _destCtrl,
+          //     destFocus: _destFocus,
+          //     expanded: _expanded,
+          //     searching: _searching,
+          //     suggestions: _suggestions,
+          //     onSelect: _selectPlace,
+          //     onClear: _reset,
+          //   ),
+          // ),
 
-          Positioned(
-            right: LGGap.xl,
-            bottom: bottom + AppShell.navHeight + (showResults ? 300 : LGGap.section),
-            child: Column(
-              children: [
-                GlassIconButton(
-                  icon: CupertinoIcons.location_fill,
-                  semanticLabel: 'Centre on my location',
-                  size: 42,
-                  color: accent,
-                  onPressed: () => _mapController.move(_origin, 15),
-                ),
-                const SizedBox(height: LGGap.md),
-                GlassIconButton(
-                  icon: CupertinoIcons.plus,
-                  semanticLabel: 'Zoom in',
-                  size: 42,
-                  onPressed: () => _mapController.move(
-                    _mapController.camera.center,
-                    _mapController.camera.zoom + 1,
-                  ),
-                ),
-                const SizedBox(height: LGGap.sm),
-                GlassIconButton(
-                  icon: CupertinoIcons.minus,
-                  semanticLabel: 'Zoom out',
-                  size: 42,
-                  onPressed: () => _mapController.move(
-                    _mapController.camera.center,
-                    _mapController.camera.zoom - 1,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Positioned(
+          //   right: LGGap.xl,
+          //   bottom: bottom + AppShell.navHeight + (showResults ? 300 : LGGap.section),
+          //   child: Column(
+          //     children: [
+          //       GlassIconButton(
+          //         icon: CupertinoIcons.location_fill,
+          //         semanticLabel: 'Centre on my location',
+          //         size: 42,
+          //         color: accent,
+          //         onPressed: () => _mapController.move(_origin, 15),
+          //       ),
+          //       const SizedBox(height: LGGap.md),
+          //       GlassIconButton(
+          //         icon: CupertinoIcons.plus,
+          //         semanticLabel: 'Zoom in',
+          //         size: 42,
+          //         onPressed: () => _mapController.move(
+          //           _mapController.camera.center,
+          //           _mapController.camera.zoom + 1,
+          //         ),
+          //       ),
+          //       const SizedBox(height: LGGap.sm),
+          //       GlassIconButton(
+          //         icon: CupertinoIcons.minus,
+          //         semanticLabel: 'Zoom out',
+          //         size: 42,
+          //         onPressed: () => _mapController.move(
+          //           _mapController.camera.center,
+          //           _mapController.camera.zoom - 1,
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
 
-          if (!showResults)
-            Positioned(
-              left: LGGap.xl,
-              bottom: bottom + AppShell.navHeight + LGGap.md,
-              child: const _Attribution(),
-            ),
+          // if (!showResults)
+          //   Positioned(
+          //     left: LGGap.xl,
+          //     bottom: bottom + AppShell.navHeight + LGGap.md,
+          //     child: const _Attribution(),
+          //   ),
 
-          if (_routing)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: bottom + AppShell.navHeight + 60,
-              child: const Center(child: GlassLoader()),
-            ),
+          // if (_routing)
+          //   Positioned(
+          //     left: 0,
+          //     right: 0,
+          //     bottom: bottom + AppShell.navHeight + 60,
+          //     child: const Center(child: GlassLoader()),
+          //   ),
 
-          if (_error != null && !_routing)
-            Positioned(
-              left: LGGap.xl,
-              right: LGGap.xl,
-              bottom: bottom + AppShell.navHeight + 60,
-              child: _ErrorCard(message: _error!),
-            ),
+          // if (_error != null && !_routing)
+          //   Positioned(
+          //     left: LGGap.xl,
+          //     right: LGGap.xl,
+          //     bottom: bottom + AppShell.navHeight + 60,
+          //     child: _ErrorCard(message: _error!),
+          //   ),
 
-          if (showResults)
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: _RoutesSheet(
-                mode: _mode,
-                onModeChanged: (m) => setState(() => _mode = m),
-                destination: _destination!,
-                route: _route!,
-              ),
-            ),
+          // if (showResults)
+          //   Align(
+          //     alignment: Alignment.bottomCenter,
+          //     child: _RoutesSheet(
+          //       mode: _mode,
+          //       onModeChanged: (m) => setState(() => _mode = m),
+          //       destination: _destination!,
+          //       route: _route!,
+          //     ),
+          //   ),
         ],
       ),
     );

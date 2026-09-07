@@ -33,7 +33,7 @@ void main() async{
     systemNavigationBarDividerColor: Color(0x00000000),
   ));
 
-  AppData.instance.load();
+  // AppData.instance.load();
 
   runApp(const TravellyApp());
 }

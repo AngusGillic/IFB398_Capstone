@@ -230,8 +230,8 @@ class AppData extends ValueNotifier<UserData> {
   /// Everything at zero, for first launch and while loading.
   static final UserData empty = UserData(
     profile: LocalProfile(
-      firstName: 'Peter',
-      fullName: 'Peter Parker',
+      firstName: '',
+      fullName: '',
       email: '',
       memberSince: DateTime.now(),
     ),
@@ -258,7 +258,7 @@ class AppData extends ValueNotifier<UserData> {
   Future<void> load() async {
     safePrint("Here comes the ApiClient data...");
     value = await ApiClient.fetchUserData();
-    // safePrint();
+    // instance.update(value);
   }
 
   void update(UserData data) => value = data;

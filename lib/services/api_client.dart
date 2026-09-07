@@ -64,7 +64,7 @@ class ApiClient {
 
     Map<String, dynamic> userMap = {
       "profile": {
-        "first_name": "Chocolate Mandarin",
+        "first_name": fullName,
         "full_name": fullName,
         "email": (
             attributes.firstWhere(
@@ -88,8 +88,28 @@ class ApiClient {
           "change_vs_previous": 0.42,
           "trips": 8,
         },
-        "month": {"...": "same shape, labels W1-W4"},
-        "year": {"...": "same shape, labels J-D"},
+        "month": {
+          "co2_saved_kg": 2.5,
+          "goal_kg": 14.8,
+          "values": [2.1, 2.4, 2.9, 2.4],
+          "labels": ['W1', 'W2', 'W3', 'W4'],
+          "by_mode": {'Transit': 6.9, 'Walking': 1.9, 'Cycling': 1.0},
+          "green_km": 74.2,
+          "driven_km": 21.5,
+          "change_vs_previous": 0.12,
+          "trips": 43,
+        },
+        "year": {
+          "co2_saved_kg": 52,
+         "goal_kg": 90,
+          "values": [3.1, 4.0, 4.8, 5.2, 4.4, 3.9, 4.6, 5.1, 4.2, 4.5, 4.0, 4.2],
+          "labels": ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'],
+          "by_mode": {'Transit': 36.4, 'Walking': 9.8, 'Cycling': 5.8},
+          "green_km": 331.0,
+          "driven_km": 81.7,
+          "change_vs_previous": 0.24,
+          "trips": 148,
+        },
       },
       "lifetime": {"co2_saved_kg": 62, "total_trips": 158, "total_km": 415.8},
       "pet": {
