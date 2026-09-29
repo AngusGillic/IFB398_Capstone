@@ -1,5 +1,6 @@
 import 'package:amplify_api/amplify_api.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:travelly_flutter_ios_style/models/ModelProvider.dart';
 
@@ -24,6 +25,12 @@ class _HomePageState extends State<HomePage> {
 
   void _open(BuildContext context, Widget page) {
     Navigator.of(context).push(CupertinoPageRoute(builder: (_) => page));
+  }
+
+  void _replace(BuildContext context, Widget page) {
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => page));
   }
 
   // void initState() {

@@ -89,7 +89,7 @@ class ApiClient {
           "trips": 8,
         },
         "month": {
-          "co2_saved_kg": 2.5,
+          "co2_saved_kg": 5.8,
           "goal_kg": 14.8,
           "values": [2.1, 2.4, 2.9, 2.4],
           "labels": ['W1', 'W2', 'W3', 'W4'],
