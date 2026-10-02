@@ -65,10 +65,18 @@ class _MapPageState extends State<MapPage> {
   @override
   void initState() {
     super.initState();
+
     _destFocus.addListener(() {
       if (_destFocus.hasFocus) {
         setState(() => _expanded = true);
-        _originFocus.unfocus(); 
+        print('Destination Focus: ${_destFocus.hasFocus}');
+      }
+    });
+
+    _originFocus.addListener(() {
+      if (_originFocus.hasFocus) {
+        setState(() => _expanded = true);
+        print('Origin Focus: ${_originFocus.hasFocus}');
       }
     });
 
@@ -82,6 +90,7 @@ class _MapPageState extends State<MapPage> {
     _originCtrl.dispose();
     _destCtrl.dispose();
     _destFocus.dispose();
+    _originFocus.dispose();
     super.dispose();
   }
 
@@ -147,7 +156,10 @@ class _MapPageState extends State<MapPage> {
     if (_start != null && _destination != null) {
       try {
         // final result = await GeoService.route(_origin, dest.point);
-        final result = await GeoService.route(_start!.point, _destination!.point);
+        final result = await GeoService.route(
+          _start!.point,
+          _destination!.point,
+        );
         if (!mounted) return;
 
         setState(() => _route = result);
@@ -241,18 +253,19 @@ class _MapPageState extends State<MapPage> {
                   ),
                 MarkerLayer(
                   markers: [
-                    Marker(
-                      point: _origin,
-                      width: 22,
-                      height: 22,
-                      child: const _OriginDot(),
-                    ),
+                    if (_start == null && _destination == null)
+                      Marker(
+                        point: _origin,
+                        width: 22,
+                        height: 22,
+                        child: const _OriginDot(),
+                      ),
                     if (_start != null)
                       Marker(
                         point: _start!.point,
                         width: 24,
                         height: 24,
-                        child: _DestinationPin(color: accent),
+                        child: const _OriginDot(),
                       ),
                     if (_destination != null)
                       Marker(
@@ -507,13 +520,17 @@ class _SearchCard extends StatelessWidget {
           children: [
             if (expanded) ...[
               GlassField(
+                key: const ValueKey('origin-search-field'),
+                onTap: () {
+                  print('Origin Search Bar Tapped');
+                },
                 focusNode: originFocus,
                 controller: originCtrl,
                 placeholder: 'Start',
                 icon: CupertinoIcons.circle,
                 textInputAction: TextInputAction.search,
                 // Starting point search
-                suffix: searchStart 
+                suffix: searchStart
                     ? const CupertinoActivityIndicator(radius: 8)
                     : (originCtrl.text.isEmpty
                           ? null
@@ -531,8 +548,8 @@ class _SearchCard extends StatelessWidget {
                               ),
                             )),
               ),
-              if (suggestions.isNotEmpty) ...[
-                const SizedBox(height: LGGap.md),
+              if (suggestions.isNotEmpty && originFocus.hasFocus) ...[
+                // const SizedBox(height: LGGap.md),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 240),
                   child: ListView.separated(
@@ -596,6 +613,11 @@ class _SearchCard extends StatelessWidget {
               const SizedBox(height: LGGap.md),
             ],
             GlassField(
+              key: const ValueKey('dest-search-field'),
+              onTap: () {
+                print('Destination Search Bar Tapped');
+                // FocusScope.of(context).requestFocus(destFocus);
+              },
               controller: destCtrl,
               focusNode: destFocus,
               placeholder: 'Where to?',
@@ -620,8 +642,8 @@ class _SearchCard extends StatelessWidget {
                             ),
                           )),
             ),
-            if (suggestions.isNotEmpty) ...[
-              const SizedBox(height: LGGap.md),
+            if (suggestions.isNotEmpty && destFocus.hasFocus) ...[
+              // const SizedBox(height: LGGap.md),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 240),
                 child: ListView.separated(
