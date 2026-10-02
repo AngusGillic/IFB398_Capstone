@@ -44,6 +44,7 @@ class _MapPageState extends State<MapPage> {
   final _originCtrl = TextEditingController(text: 'Current location');
   final _destCtrl = TextEditingController();
   final _destFocus = FocusNode();
+  final _originFocus = FocusNode();
 
   static final _origin = LatLng(MapsConfig.defaultLat, MapsConfig.defaultLng);
 
@@ -52,10 +53,12 @@ class _MapPageState extends State<MapPage> {
 
   List<Place> _suggestions = const [];
   Place? _destination;
+  Place? _start;
   RouteResult? _route;
 
   bool _expanded = false;
-  bool _searching = false;
+  bool _searchingStart = false;
+  bool _searchingDest = false;
   bool _routing = false;
   String? _error;
 
@@ -63,9 +66,14 @@ class _MapPageState extends State<MapPage> {
   void initState() {
     super.initState();
     _destFocus.addListener(() {
-      if (_destFocus.hasFocus) setState(() => _expanded = true);
+      if (_destFocus.hasFocus) {
+        setState(() => _expanded = true);
+        _originFocus.unfocus(); 
+      }
     });
-    _destCtrl.addListener(_onQueryChanged);
+
+    _destCtrl.addListener(_onDestQueryChanged);
+    _originCtrl.addListener(_onOrgQueryChanged);
   }
 
   @override
@@ -78,7 +86,7 @@ class _MapPageState extends State<MapPage> {
   }
 
   /// Nominatim asks for no more than one request a second.
-  void _onQueryChanged() {
+  void _onDestQueryChanged() {
     _debounce?.cancel();
     final query = _destCtrl.text;
 
@@ -88,56 +96,99 @@ class _MapPageState extends State<MapPage> {
     }
 
     _debounce = Timer(const Duration(milliseconds: 700), () async {
-      setState(() => _searching = true);
+      setState(() => _searchingDest = true);
       try {
         final results = await GeoService.search(query);
         if (mounted) setState(() => _suggestions = results);
       } catch (_) {
         if (mounted) setState(() => _error = 'Search unavailable');
       } finally {
-        if (mounted) setState(() => _searching = false);
+        if (mounted) setState(() => _searchingDest = false);
       }
     });
   }
 
-  Future<void> _selectPlace(Place place) async {
+  void _onOrgQueryChanged() {
+    _debounce?.cancel();
+    final query = _originCtrl.text;
+
+    if (query.trim().length < 3) {
+      setState(() => _suggestions = const []);
+      return;
+    }
+
+    _debounce = Timer(const Duration(milliseconds: 700), () async {
+      setState(() => _searchingStart = true);
+      try {
+        final results = await GeoService.search(query);
+        if (mounted) setState(() => _suggestions = results);
+      } catch (_) {
+        if (mounted) setState(() => _error = 'Search unavailable');
+      } finally {
+        if (mounted) setState(() => _searchingStart = false);
+      }
+    });
+  }
+
+  Future<void> _selectPlaceDest(Place dest) async {
     FocusScope.of(context).unfocus();
-    _destCtrl.removeListener(_onQueryChanged);
-    _destCtrl.text = place.name;
-    _destCtrl.addListener(_onQueryChanged);
+    _destCtrl.removeListener(_onDestQueryChanged);
+    _destCtrl.text = dest.name;
+    _destCtrl.addListener(_onDestQueryChanged);
 
     setState(() {
-      _destination = place;
+      // _start = place;
+      _destination = dest;
       _suggestions = const [];
       _routing = true;
       _error = null;
     });
 
-    try {
-      final result = await GeoService.route(_origin, place.point);
-      if (!mounted) return;
+    if (_start != null && _destination != null) {
+      try {
+        // final result = await GeoService.route(_origin, dest.point);
+        final result = await GeoService.route(_start!.point, _destination!.point);
+        if (!mounted) return;
 
-      setState(() => _route = result);
+        setState(() => _route = result);
 
-      if (result != null && result.points.isNotEmpty) {
-        _mapController.fitCamera(
-          CameraFit.coordinates(
-            coordinates: result.points,
-            padding: const EdgeInsets.fromLTRB(50, 160, 50, 320),
-          ),
-        );
+        if (result != null && result.points.isNotEmpty) {
+          _mapController.fitCamera(
+            CameraFit.coordinates(
+              coordinates: result.points,
+              padding: const EdgeInsets.fromLTRB(50, 160, 50, 320),
+            ),
+          );
+        }
+      } catch (_) {
+        if (mounted) setState(() => _error = 'Routing unavailable');
+      } finally {
+        if (mounted) setState(() => _routing = false);
       }
-    } catch (_) {
-      if (mounted) setState(() => _error = 'Routing unavailable');
-    } finally {
-      if (mounted) setState(() => _routing = false);
     }
+  }
+
+  Future<void> _selectPlaceStart(Place start) async {
+    FocusScope.of(context).unfocus();
+    _originCtrl.removeListener(_onOrgQueryChanged);
+    _originCtrl.text = start.name;
+    _originCtrl.addListener(_onOrgQueryChanged);
+
+    setState(() {
+      _start = start;
+      // _destination = place;
+      _suggestions = const [];
+      _routing = true;
+      _error = null;
+    });
   }
 
   void _reset() {
     FocusScope.of(context).unfocus();
     setState(() {
+      _originCtrl.clear();
       _destCtrl.clear();
+      _start = null;
       _destination = null;
       _route = null;
       _suggestions = const [];
@@ -152,7 +203,8 @@ class _MapPageState extends State<MapPage> {
     final top = MediaQuery.paddingOf(context).top;
     final bottom = MediaQuery.paddingOf(context).bottom;
     final accent = LGColor.resolve(LGColor.accent, context);
-    final showResults = _route != null && _destination != null;
+    final showResults =
+        _route != null && _destination != null && _start != null;
 
     return AppShell(
       showBottomNav: true,
@@ -195,6 +247,13 @@ class _MapPageState extends State<MapPage> {
                       height: 22,
                       child: const _OriginDot(),
                     ),
+                    if (_start != null)
+                      Marker(
+                        point: _start!.point,
+                        width: 24,
+                        height: 24,
+                        child: _DestinationPin(color: accent),
+                      ),
                     if (_destination != null)
                       Marker(
                         point: _destination!.point,
@@ -208,18 +267,22 @@ class _MapPageState extends State<MapPage> {
             ),
           ),
 
+          /// Destination Search Bar
           Positioned(
             top: top + LGGap.md,
             left: LGGap.xl,
             right: LGGap.xl,
             child: _SearchCard(
               originCtrl: _originCtrl,
+              originFocus: _originFocus,
               destCtrl: _destCtrl,
               destFocus: _destFocus,
               expanded: _expanded,
-              searching: _searching,
+              searchStart: _searchingStart,
+              searchDest: _searchingDest,
               suggestions: _suggestions,
-              onSelect: _selectPlace,
+              onSelectStart: _selectPlaceStart,
+              onSelectDest: _selectPlaceDest,
               onClear: _reset,
             ),
           ),
@@ -292,6 +355,7 @@ class _MapPageState extends State<MapPage> {
               child: _RoutesSheet(
                 mode: _mode,
                 onModeChanged: (m) => setState(() => _mode = m),
+                start: _start!,
                 destination: _destination!,
                 route: _route!,
               ),
@@ -402,20 +466,27 @@ class _SearchCard extends StatelessWidget {
     required this.originCtrl,
     required this.destCtrl,
     required this.destFocus,
+    required this.originFocus,
     required this.expanded,
-    required this.searching,
+    required this.searchStart,
+    required this.searchDest,
     required this.suggestions,
-    required this.onSelect,
+    required this.onSelectStart,
+    required this.onSelectDest,
+
     required this.onClear,
   });
 
   final TextEditingController originCtrl;
   final TextEditingController destCtrl;
   final FocusNode destFocus;
+  final FocusNode originFocus;
   final bool expanded;
-  final bool searching;
+  final bool searchStart;
+  final bool searchDest;
   final List<Place> suggestions;
-  final ValueChanged<Place> onSelect;
+  final ValueChanged<Place> onSelectStart;
+  final ValueChanged<Place> onSelectDest;
   final VoidCallback onClear;
 
   @override
@@ -436,11 +507,92 @@ class _SearchCard extends StatelessWidget {
           children: [
             if (expanded) ...[
               GlassField(
+                focusNode: originFocus,
                 controller: originCtrl,
                 placeholder: 'Start',
                 icon: CupertinoIcons.circle,
-                textInputAction: TextInputAction.next,
+                textInputAction: TextInputAction.search,
+                // Starting point search
+                suffix: searchStart 
+                    ? const CupertinoActivityIndicator(radius: 8)
+                    : (originCtrl.text.isEmpty
+                          ? null
+                          : GlassTappable(
+                              haptic: false,
+                              scale: 0.85,
+                              onTap: onClear,
+                              child: Icon(
+                                CupertinoIcons.clear_circled_solid,
+                                size: 17,
+                                color: LGColor.resolve(
+                                  LGColor.tertiaryLabel,
+                                  context,
+                                ),
+                              ),
+                            )),
               ),
+              if (suggestions.isNotEmpty) ...[
+                const SizedBox(height: LGGap.md),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 240),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: suggestions.length,
+                    separatorBuilder: (context, _) => Container(
+                      height: 0.33,
+                      margin: const EdgeInsets.only(left: 34),
+                      color: LGColor.resolve(LGColor.separator, context),
+                    ),
+                    itemBuilder: (context, i) {
+                      final place = suggestions[i];
+                      return GlassTappable(
+                        haptic: false,
+                        scale: 0.99,
+                        onTap: () => onSelectStart(place),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: LGGap.lg,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                CupertinoIcons.placemark,
+                                size: 16,
+                                color: secondary,
+                              ),
+                              const SizedBox(width: LGGap.xl),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      place.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: LGText.subhead(context),
+                                    ),
+                                    if (place.detail.isNotEmpty)
+                                      Text(
+                                        place.detail,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: LGText.caption1(
+                                          context,
+                                        ).copyWith(color: secondary),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
               const SizedBox(height: LGGap.md),
             ],
             GlassField(
@@ -449,7 +601,8 @@ class _SearchCard extends StatelessWidget {
               placeholder: 'Where to?',
               icon: CupertinoIcons.search,
               textInputAction: TextInputAction.search,
-              suffix: searching
+              // Destination Searching point
+              suffix: searchDest
                   ? const CupertinoActivityIndicator(radius: 8)
                   : (destCtrl.text.isEmpty
                         ? null
@@ -485,7 +638,7 @@ class _SearchCard extends StatelessWidget {
                     return GlassTappable(
                       haptic: false,
                       scale: 0.99,
-                      onTap: () => onSelect(place),
+                      onTap: () => onSelectDest(place),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: LGGap.lg),
                         child: Row(
@@ -538,12 +691,14 @@ class _RoutesSheet extends StatelessWidget {
   const _RoutesSheet({
     required this.mode,
     required this.onModeChanged,
+    required this.start,
     required this.destination,
     required this.route,
   });
 
   final TravelMode mode;
   final ValueChanged<TravelMode> onModeChanged;
+  final Place start;
   final Place destination;
   final RouteResult route;
 
@@ -647,7 +802,7 @@ class _RoutesSheet extends StatelessWidget {
                         const SizedBox(height: LGGap.md),
                         CupertinoButton.filled(
                           sizeStyle: CupertinoButtonSize.small,
-                          child: Text("Start"), 
+                          child: Text("Start"),
                           onPressed: () {
                             print("Trip completed");
                             double distTraveled = km;
@@ -655,15 +810,22 @@ class _RoutesSheet extends StatelessWidget {
                             double co2Saved = option.saving;
                             print("trip distTraveled : ${distTraveled}");
                             print("trip type: ${option.mode.label}");
-                            print("trip co2Saved: ${co2Saved.toStringAsFixed(2)}");
-                            
-                            UserData profile = AppData.current;
-                            print("week co2savedkg: ${profile.impact[ImpactRange.week]?.co2SavedKg}");
-                            print("week greenKm: ${profile.impact[ImpactRange.week]?.greenKm}");
-                            print("week drivenKm: ${profile.impact[ImpactRange.week]?.drivenKm}");
+                            print(
+                              "trip co2Saved: ${co2Saved.toStringAsFixed(2)}",
+                            );
 
-                          }
-                        )
+                            UserData profile = AppData.current;
+                            print(
+                              "week co2savedkg: ${profile.impact[ImpactRange.week]?.co2SavedKg}",
+                            );
+                            print(
+                              "week greenKm: ${profile.impact[ImpactRange.week]?.greenKm}",
+                            );
+                            print(
+                              "week drivenKm: ${profile.impact[ImpactRange.week]?.drivenKm}",
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ],

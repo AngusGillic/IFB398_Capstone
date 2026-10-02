@@ -10,6 +10,7 @@ import '../core/user_data_session.dart';
 import '../services/username_mapper.dart';
 
 class ApiClient {
+  // String userId
   static const _base = 'https://api.travelly.example';
   static const _base2 =
       "https://9057i6cd5c.execute-api.ap-southeast-2.amazonaws.com/dev/trips";
