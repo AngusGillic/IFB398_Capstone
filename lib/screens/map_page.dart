@@ -822,32 +822,70 @@ class _RoutesSheet extends StatelessWidget {
                             color: eco,
                           ),
                         const SizedBox(height: LGGap.md),
-                        CupertinoButton.filled(
-                          sizeStyle: CupertinoButtonSize.small,
-                          child: Text("Start"),
-                          onPressed: () {
-                            print("Trip completed");
-                            double distTraveled = km;
-                            // String type = option.mode;
-                            double co2Saved = option.saving;
-                            print("trip distTraveled : ${distTraveled}");
-                            print("trip type: ${option.mode.label}");
-                            print(
-                              "trip co2Saved: ${co2Saved.toStringAsFixed(2)}",
-                            );
+                        // Only selected travel option have "onPressed" enabled
+                        if (mode == option.mode)
+                          CupertinoButton.filled(
+                            sizeStyle: CupertinoButtonSize.small,
+                            child: Text("Start"),
+                            onPressed: () {
+                              print("YES");
+                              print("Trip completed");
+                              double distTraveled = km;
+                              double co2Saved = option.saving;
+                              print("trip distTraveled : ${distTraveled}");
+                              print("trip type: ${option.mode.label}");
+                              print("trip co2Saved: ${co2Saved}");
 
-                            UserData profile = AppData.current;
-                            print(
-                              "week co2savedkg: ${profile.impact[ImpactRange.week]?.co2SavedKg}",
-                            );
-                            print(
-                              "week greenKm: ${profile.impact[ImpactRange.week]?.greenKm}",
-                            );
-                            print(
-                              "week drivenKm: ${profile.impact[ImpactRange.week]?.drivenKm}",
-                            );
-                          },
-                        ),
+                              UserData profile = AppData.current;
+
+                              // BEFORE THE TRIPS (FOR DEBUGGING AND TRACKING)
+                              print("Before the trip:");
+                              print(
+                                "week co2savedkg: ${profile.impact[ImpactRange.week]!.co2SavedKg}",
+                              );
+                              print(
+                                "week greenKm: ${profile.impact[ImpactRange.week]!.greenKm}",
+                              );
+                              print(
+                                "week drivenKm: ${profile.impact[ImpactRange.week]!.drivenKm}",
+                              );
+
+                              // Trip activated
+                              profile.impact[ImpactRange.week]!.co2SavedKg =
+                                  profile.impact[ImpactRange.week]!.co2SavedKg +
+                                  co2Saved;
+                              if (option.mode.label != "Drive") {
+                                profile.impact[ImpactRange.week]!.greenKm =
+                                    profile.impact[ImpactRange.week]!.greenKm +
+                                    distTraveled;
+                              } else {
+                                profile.impact[ImpactRange.week]!.greenKm =
+                                    profile.impact[ImpactRange.week]!.drivenKm +
+                                    distTraveled;
+                              }
+
+                              // AFTER THE TRIPS (FOR DEBUGGING AND TRACKING)
+                              print("After the trip");
+                              print(
+                                "week co2savedkg: ${profile.impact[ImpactRange.week]!.co2SavedKg.toStringAsFixed(2)}",
+                              );
+                              print(
+                                "week greenKm: ${profile.impact[ImpactRange.week]!.greenKm.toStringAsFixed(2)}",
+                              );
+                              print(
+                                "week drivenKm: ${profile.impact[ImpactRange.week]!.drivenKm.toStringAsFixed(2)}",
+                              );
+                            },
+                          ),
+
+                        // Disable "onPressed" of unselected travel options
+                        if (mode != option.mode)
+                          CupertinoButton.filled(
+                            sizeStyle: CupertinoButtonSize.small,
+                            child: Text("Start"),
+                            onPressed: null,
+                            disabledColor: CupertinoColors.systemCyan,
+                          ),
                       ],
                     ),
                   ],
