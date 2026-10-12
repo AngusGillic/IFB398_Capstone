@@ -91,8 +91,8 @@ screen should predict a successful purchase or permanently alter coins before
 the server confirms it.
 
 The server implementation and deployment template are under `backend/`.
-These endpoints are not deployed yet; the Flutter screens still use their
-original placeholders.
+Deployment is outside the current scope. Selection and profile now load
+confirmed Pets data from the configured API.
 
 
 ## Implementation plan
@@ -104,8 +104,30 @@ original placeholders.
    Implemented locally; deployment and the external trips-worker hookup
    are pending.
 3. Connect selection and profile to the API; handle loading, failures,
-   relaunches and account changes.
+   relaunches and account changes. Complete.
 4. Implement garden purchases and care actions, including inventory, prices,
    effects and cooldowns.
 5. Verify the complete flow with backend and client tests for unlocks, rewards,
    retries, concurrent updates and account isolation.
+
+
+## Flutter client
+
+Set the existing Pets API base URL when running the app:
+
+```powershell
+flutter run --dart-define=PETS_API_URL=https://your-pets-api.example
+```
+
+`PetApi` attaches the current Cognito access token and checks that its account
+matches the owner bound to `PetData`. The owner is never sent in the request
+body or URL. `PetData` discards responses from a previous account, clears state
+on sign-out, and publishes only confirmed snapshots. A lost mutation response
+retains its original request ID for retry; conflicting writes reload the
+server state before the user tries again. Missing configuration displays an
+unavailable state instead of showing mock stats.
+
+Selection waits for a successful write before opening the garden. Profile
+listens for updated care stats. Confirmed pet stats and lifetime savings also
+update `AppData`; loading the existing summary cannot replace them with its
+hardcoded figures.

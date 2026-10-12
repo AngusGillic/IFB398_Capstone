@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:travelly_flutter_ios_style/data/user_data.dart';
-import 'package:travelly_flutter_ios_style/services/api_client.dart';
+import 'pet_data.dart';
+import '../models/pet.dart';
 
 // import '../gamification/badge_service.dart';
 // import '../gamification/challenge_service.dart';
@@ -22,21 +25,32 @@ class UserDataSession {
 
   static String? _boundUserId;
   static bool _binding = false;
+  static int _authSession = 0;
 
   /// Call after Cognito session is confirmed (login / SessionGate).
   static Future<void> onAuthenticated() async {
     if (_binding) return;
     _binding = true;
+    final session = _authSession;
     try {
       final sub = await _resolveCognitoSub();
       // For Debugging only:
       // final currentUser = await Amplify.Auth.getCurrentUser();
       // safePrint(currentUser);
 
+      if (session != _authSession) return;
       if (sub == null) {
+        await onSignedOut();
         debugPrint('UserDataSession.onAuthenticated: no Cognito sub');
         return;
       }
+      if (_boundUserId != sub) {
+        AppData.instance.reset();
+        PetController.instance.select(PetCatalogue.all.first.id);
+        _boundUserId = sub;
+      }
+      PetData.instance.bindUser(sub);
+      unawaited(PetData.instance.load());
       // await _applyUser(sub, signedIn: true);
       // await StudyAssignmentService.instance.ensureEnrolled();
     } finally {
@@ -46,20 +60,11 @@ class UserDataSession {
 
   /// Call on logout before navigating to login.
   static Future<void> onSignedOut() async {
-    if (_binding) return;
-    _binding = true;
-    try {
-      // await _resetInMemoryServices();
-      // StudyAssignmentService.instance.resetForUserSwitch();
-      // await _clearDataStoreLocal();
-      // await LocalTripDb().closeForUserSwitch();
-      // await UserLocalScope.bindUser(null);
-      _boundUserId = null;
-      // final session = Amplify.Auth.
-      debugPrint('UserDataSession: signed out — local personal scope cleared');
-    } finally {
-      _binding = false;
-    }
+    _authSession++;
+    _boundUserId = null;
+    PetData.instance.bindUser(null);
+    AppData.instance.reset();
+    PetController.instance.select(PetCatalogue.all.first.id);
   }
 
   // static Future<void> _applyUser(String userId, {required bool signedIn}) async {
@@ -131,7 +136,7 @@ class UserDataSession {
         }
       }
       final current = await Amplify.Auth.getCurrentUser();
-      _boundUserId = current.userId;
+      return current.userId;
     } catch (e) {
       debugPrint('UserDataSession resolve sub: $e');
     }

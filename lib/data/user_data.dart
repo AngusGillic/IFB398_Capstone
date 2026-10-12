@@ -1,4 +1,3 @@
-import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/foundation.dart';
 import '../services/api_client.dart';
 
@@ -250,6 +249,15 @@ class UserData {
       impact[range] ?? ImpactSeries.empty;
 
   ImpactSeries get week => seriesFor(ImpactRange.week);
+
+  UserData withPet(PetStats stats, double savedKg) => UserData(
+    profile: profile,
+    impact: impact,
+    lifetime: LifetimeImpact(
+      co2SavedKg: savedKg, totalTrips: lifetime.totalTrips, totalKm: lifetime.totalKm,
+    ),
+    pet: stats, suggestions: suggestions, challenge: challenge,
+  );
 }
 
 /// Start with everything at zero:
@@ -294,10 +302,28 @@ class AppData extends ValueNotifier<UserData> {
   );
 
   /// Fetch the signed-in user's figures. See BACKEND.md.
+  PetStats? _savedPet;
+  double? _savedPetCo2;
+  int _session = 0;
+
   Future<void> load() async {
-    safePrint("Here comes the ApiClient data...");
-    value = await ApiClient.fetchUserData();
-    // instance.update(value);
+    final session = _session;
+    final data = await ApiClient.fetchUserData();
+    if (session != _session) return;
+    value = _savedPet == null ? data : data.withPet(_savedPet!, _savedPetCo2!);
+  }
+
+  void setPet(PetStats stats, double savedKg) {
+    _savedPet = stats;
+    _savedPetCo2 = savedKg;
+    value = value.withPet(stats, savedKg);
+  }
+
+  void reset() {
+    _session++;
+    _savedPet = null;
+    _savedPetCo2 = null;
+    value = empty;
   }
 
   void update(UserData data) => value = data;

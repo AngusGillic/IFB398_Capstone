@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 
-import '../data/user_data.dart';
+import '../core/pet_data.dart';
+import '../models/pet_state.dart';
+import '../widgets/pet_data_view.dart';
 import '../models/pet.dart';
 import '../ui/entrance.dart';
 import '../ui/glass.dart';
@@ -10,20 +12,21 @@ import '../widgets/card_panels.dart';
 import '../widgets/charts.dart';
 
 class PetProfilePage extends StatelessWidget {
-  const PetProfilePage({super.key});
+  const PetProfilePage({super.key, this.data});
+
+  final PetData? data;
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<String>(
-      valueListenable: PetController.instance,
-      builder: (context, _, __) => _build(context, PetController.instance.selected),
+    return PetDataView(
+      data: data,
+      builder: (context, state) => _build(context, PetCatalogue.byId(state.selectedPetId), state),
     );
   }
 
-  Widget _build(BuildContext context, Pet pet) {
-    final data = AppData.current;
-    final savedKg = data.lifetime.co2SavedKg;
-    final stats = data.pet;
+  Widget _build(BuildContext context, Pet pet, PetState state) {
+    final savedKg = state.co2SavedKg;
+    final stats = state.stats;
 
     final secondary = LGColor.resolve(LGColor.secondaryLabel, context);
     final eco = LGColor.resolve(LGColor.eco, context);
@@ -46,6 +49,7 @@ class PetProfilePage extends StatelessWidget {
           MediaQuery.paddingOf(context).bottom + AppShell.navHeight + LGGap.section,
         ),
         children: [
+          PetStatus(data: data),
           Entrance(index: 0, child: const BackTitle(title: 'Profile')),
 
           Entrance(index: 1, child: Center(

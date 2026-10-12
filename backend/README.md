@@ -90,4 +90,5 @@ start with full care stats; this change does not add automatic stat decay.
 These are implementation defaults for review, not values found in the UI.
 Small pot and kennel purchases save ownership; displaying them is step four.
 
-The Flutter screens still use their original placeholders until step three.
+Selection and profile use the configured Pets API. See `../PETS_BACKEND.md`
+for the Flutter configuration. Garden actions are connected in step four.
