@@ -73,6 +73,7 @@ class IosField extends StatelessWidget {
   final IconData? trailing;
   final TextEditingController? controller;
   final TextInputType? keyboardType;
+  // Added onChanged for dynamic input field tracking, used for Form Validation
   final ValueChanged<String>? onChanged;
   final VoidCallback? onTrailingTap;
 
@@ -112,6 +113,7 @@ class IosField extends StatelessWidget {
           obscure: obscure,
           keyboardType: keyboardType,
           suffix: trailingIcon,
+          onChanged: onChanged,
         ),
       );
     }
@@ -197,8 +199,9 @@ class BackTitle extends StatelessWidget {
   final String title;
   final String? trailing;
   final VoidCallback? onTrailingTap;
+  final VoidCallback? onBackTap;
 
-  const BackTitle({super.key, required this.title, this.trailing, this.onTrailingTap});
+  const BackTitle({super.key, required this.title, this.trailing, this.onTrailingTap, this.onBackTap});
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +218,13 @@ class BackTitle extends StatelessWidget {
                 ? GlassTappable(
                     haptic: false,
                     scale: 0.88,
-                    onTap: () => Navigator.maybePop(context),
+                    onTap: () {
+                      if (onBackTap != null) {
+                        onBackTap!();
+                      } else {
+                        Navigator.maybePop(context);
+                      }
+                    },
                     child: Icon(CupertinoIcons.back, size: 26, color: accent),
                   )
                 : null,
