@@ -46,6 +46,7 @@ the token and uses its subject as the owner; it never accepts a client user ID.
 | Method | Path | Body | Purpose |
 | --- | --- | --- | --- |
 | GET | `/v1/me/pet` | None | Load or initialise state |
+| GET | `/v1/me/pet/catalogue` | None | Read unlocks, prices and care effects |
 | PUT | `/v1/me/pet/selection` | `{"pet_id":"koala","version":0,"request_id":"uuid"}` | Select an unlocked pet |
 | POST | `/v1/me/pet/purchases` | `{"item_id":"water","version":1,"request_id":"uuid"}` | Buy one garden item |
 | POST | `/v1/me/pet/actions` | `{"action_id":"water","version":2,"request_id":"uuid"}` | Use an owned item or perform care |
@@ -59,8 +60,9 @@ Purchases deduct coins and add inventory atomically. Care consumes applicable
 inventory and updates stats atomically, clamped to 0 through 1. Small pot and
 kennel are durable items; water and fertiliser are consumables. Sunlight is a
 care action with a server-controlled cooldown. More opens the item catalogue
-and is not a mutation. Prices, effects and cooldown durations need choosing
-before step two; the current UI does not define them.
+and is not a mutation. Prices, effects and cooldown durations are provisional
+defaults in `backend/pets/catalogue.py`. They need review
+before deployment; the current UI does not define them.
 
 Each mutation uses a unique request ID. Retrying the same request returns its
 original result without charging or applying it again. Reusing an ID with a
@@ -79,7 +81,8 @@ Errors return `{"code":"pet_locked","message":"This pet is still locked"}`.
 
 ## Integration
 
-Step two adds the server implementation and storage. Step three adds an API
+Step two adds the server implementation and storage under `backend/`.
+Step three adds an API
 service under `lib/services/`, loads state after sign-in and clears it on
 sign-out. It publishes confirmed stats to `AppData` and selection to
 `PetController`. Pet selection and profile should listen for state updates.
@@ -87,17 +90,19 @@ Step four connects the garden actions and shows pending/error states. No
 screen should predict a successful purchase or permanently alter coins before
 the server confirms it.
 
-The repository currently contains Flutter clients and generated Amplify
-models, but no Pets server or deployment configuration. These endpoints are a
-contract for the next step; they are not deployed yet.
+The server implementation and deployment template are under `backend/`.
+These endpoints are not deployed yet; the Flutter screens still use their
+original placeholders.
 
 
 ## Implementation plan
 
 1. Define the response model and API contract for selection, care stats and
-   garden inventory. Completed in this change.
+   garden inventory. Complete.
 2. Implement authenticated storage and endpoints with owner isolation,
    authoritative unlock checks, transactions and request deduplication.
+   Implemented locally; deployment and the external trips-worker hookup
+   are pending.
 3. Connect selection and profile to the API; handle loading, failures,
    relaunches and account changes.
 4. Implement garden purchases and care actions, including inventory, prices,

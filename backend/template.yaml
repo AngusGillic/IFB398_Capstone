@@ -1,0 +1,149 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: User-specific Pets API for Travelly
+
+Parameters:
+  CognitoUserPoolId:
+    Type: String
+  CognitoAppClientId:
+    Type: String
+  WebOrigin:
+    Type: String
+    Description: Allowed Flutter web origin, including scheme
+
+Globals:
+  Function:
+    Runtime: python3.13
+    Timeout: 10
+    MemorySize: 256
+    Environment:
+      Variables:
+        PETS_TABLE: !Ref PetsTable
+
+Resources:
+  PetsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: owner
+          AttributeType: S
+        - AttributeName: record
+          AttributeType: S
+      KeySchema:
+        - AttributeName: owner
+          KeyType: HASH
+        - AttributeName: record
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  PetsApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref WebOrigin
+        AllowHeaders:
+          - Authorization
+          - Content-Type
+        AllowMethods:
+          - GET
+          - PUT
+          - POST
+          - OPTIONS
+      Auth:
+        DefaultAuthorizer: Cognito
+        Authorizers:
+          Cognito:
+            IdentitySource: $request.header.Authorization
+            AuthorizationScopes:
+              - aws.cognito.signin.user.admin
+            JwtConfiguration:
+              issuer: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPoolId}
+              audience:
+                - !Ref CognitoAppClientId
+
+  PetsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: PetsStorage
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                Resource: !GetAtt PetsTable.Arn
+
+  PetsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: pets/
+      Handler: app.handler
+      Role: !GetAtt PetsRole.Arn
+      Events:
+        Read:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PetsApi
+            Method: GET
+            Path: /v1/me/pet
+            PayloadFormatVersion: '2.0'
+        Catalogue:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PetsApi
+            Method: GET
+            Path: /v1/me/pet/catalogue
+            PayloadFormatVersion: '2.0'
+        Selection:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PetsApi
+            Method: PUT
+            Path: /v1/me/pet/selection
+            PayloadFormatVersion: '2.0'
+        Purchases:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PetsApi
+            Method: POST
+            Path: /v1/me/pet/purchases
+            PayloadFormatVersion: '2.0'
+        Actions:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PetsApi
+            Method: POST
+            Path: /v1/me/pet/actions
+            PayloadFormatVersion: '2.0'
+
+  TripCreditFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: pets/
+      Handler: app.credit_trip_handler
+      Role: !GetAtt PetsRole.Arn
+
+Outputs:
+  PetsApiUrl:
+    Value: !Sub https://${PetsApi}.execute-api.${AWS::Region}.amazonaws.com
+  TripCreditFunctionArn:
+    Value: !GetAtt TripCreditFunction.Arn
