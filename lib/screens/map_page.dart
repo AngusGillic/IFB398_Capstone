@@ -1,35 +1,35 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-// import 'package:flutter_map/flutter_map.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:permission_handler/permission_handler.dart';
-// import 'package:latlong2/latlong.dart' show LatLng;
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart' show LatLng;
+import 'package:travelly_flutter_ios_style/data/user_data.dart';
 
 import '../services/geo_service.dart';
 import '../services/maps_config.dart';
 import '../ui/glass.dart';
 import '../ui/glass_widgets.dart';
 import '../widgets/app_scaffold.dart';
+import '../services/api_client.dart';
 
 enum TravelMode { walk, cycle, transit, drive }
 
 extension TravelModeMeta on TravelMode {
   String get label => switch (this) {
-        TravelMode.walk => 'Walk',
-        TravelMode.cycle => 'Cycle',
-        TravelMode.transit => 'Transit',
-        TravelMode.drive => 'Drive',
-      };
+    TravelMode.walk => 'Walk',
+    TravelMode.cycle => 'Cycle',
+    TravelMode.transit => 'Transit',
+    TravelMode.drive => 'Drive',
+  };
 
   String get key => name;
 
   IconData get icon => switch (this) {
-        TravelMode.walk => CupertinoIcons.person_fill,
-        TravelMode.cycle => CupertinoIcons.gauge,
-        TravelMode.transit => CupertinoIcons.bus,
-        TravelMode.drive => CupertinoIcons.car_detailed,
-      };
+    TravelMode.walk => CupertinoIcons.person_fill,
+    TravelMode.cycle => CupertinoIcons.gauge,
+    TravelMode.transit => CupertinoIcons.bus,
+    TravelMode.drive => CupertinoIcons.car_detailed,
+  };
 }
 
 class MapPage extends StatefulWidget {
@@ -40,37 +40,48 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
-  // final _mapController = MapController();
-  late GoogleMapController _mapController;
+  final _mapController = MapController();
   final _originCtrl = TextEditingController(text: 'Current location');
   final _destCtrl = TextEditingController();
   final _destFocus = FocusNode();
+  final _originFocus = FocusNode();
 
   static final _origin = LatLng(MapsConfig.defaultLat, MapsConfig.defaultLng);
-
-  final LatLng _center = const LatLng(-33.86, 151.20);
 
   TravelMode _mode = TravelMode.transit;
   Timer? _debounce;
 
   List<Place> _suggestions = const [];
   Place? _destination;
+  Place? _start;
   RouteResult? _route;
 
   bool _expanded = false;
-  bool _searching = false;
+  bool _searchingStart = false;
+  bool _searchingDest = false;
   bool _routing = false;
   String? _error;
-  bool _mapPermission = false;
 
   @override
   void initState() {
     super.initState();
-    _requestMapPermission();
+
     _destFocus.addListener(() {
-      if (_destFocus.hasFocus) setState(() => _expanded = true);
+      if (_destFocus.hasFocus) {
+        setState(() => _expanded = true);
+        print('Destination Focus: ${_destFocus.hasFocus}');
+      }
     });
-    _destCtrl.addListener(_onQueryChanged);
+
+    _originFocus.addListener(() {
+      if (_originFocus.hasFocus) {
+        setState(() => _expanded = true);
+        print('Origin Focus: ${_originFocus.hasFocus}');
+      }
+    });
+
+    _destCtrl.addListener(_onDestQueryChanged);
+    _originCtrl.addListener(_onOrgQueryChanged);
   }
 
   @override
@@ -79,15 +90,12 @@ class _MapPageState extends State<MapPage> {
     _originCtrl.dispose();
     _destCtrl.dispose();
     _destFocus.dispose();
+    _originFocus.dispose();
     super.dispose();
   }
 
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-  }
-
   /// Nominatim asks for no more than one request a second.
-  void _onQueryChanged() {
+  void _onDestQueryChanged() {
     _debounce?.cancel();
     final query = _destCtrl.text;
 
@@ -97,83 +105,118 @@ class _MapPageState extends State<MapPage> {
     }
 
     _debounce = Timer(const Duration(milliseconds: 700), () async {
-      setState(() => _searching = true);
+      setState(() => _searchingDest = true);
       try {
         final results = await GeoService.search(query);
         if (mounted) setState(() => _suggestions = results);
       } catch (_) {
         if (mounted) setState(() => _error = 'Search unavailable');
       } finally {
-        if (mounted) setState(() => _searching = false);
+        if (mounted) setState(() => _searchingDest = false);
       }
     });
   }
 
-  Future<void> _requestMapPermission() async {
-    var status = await Permission.locationWhenInUse.request();
+  void _onOrgQueryChanged() {
+    _debounce?.cancel();
+    final query = _originCtrl.text;
 
-    if (status.isGranted) {
-      setState(() {
-        _mapPermission = true;
-      });
-    } else if (status.isDenied) {
-      openAppSettings();
+    if (query.trim().length < 3) {
+      setState(() => _suggestions = const []);
+      return;
+    }
+
+    _debounce = Timer(const Duration(milliseconds: 700), () async {
+      setState(() => _searchingStart = true);
+      try {
+        final results = await GeoService.search(query);
+        if (mounted) setState(() => _suggestions = results);
+      } catch (_) {
+        if (mounted) setState(() => _error = 'Search unavailable');
+      } finally {
+        if (mounted) setState(() => _searchingStart = false);
+      }
+    });
+  }
+
+  Future<void> _selectPlaceDest(Place dest) async {
+    FocusScope.of(context).unfocus();
+    _destCtrl.removeListener(_onDestQueryChanged);
+    _destCtrl.text = dest.name;
+    _destCtrl.addListener(_onDestQueryChanged);
+
+    setState(() {
+      // _start = place;
+      _destination = dest;
+      _suggestions = const [];
+      _routing = true;
+      _error = null;
+    });
+
+    if (_start != null && _destination != null) {
+      try {
+        // final result = await GeoService.route(_origin, dest.point);
+        final result = await GeoService.route(
+          _start!.point,
+          _destination!.point,
+        );
+        if (!mounted) return;
+
+        setState(() => _route = result);
+
+        if (result != null && result.points.isNotEmpty) {
+          _mapController.fitCamera(
+            CameraFit.coordinates(
+              coordinates: result.points,
+              padding: const EdgeInsets.fromLTRB(50, 160, 50, 320),
+            ),
+          );
+        }
+      } catch (_) {
+        if (mounted) setState(() => _error = 'Routing unavailable');
+      } finally {
+        if (mounted) setState(() => _routing = false);
+      }
     }
   }
 
-  // Future<void> _selectPlace(Place place) async {
-  //   FocusScope.of(context).unfocus();
-  //   _destCtrl.removeListener(_onQueryChanged);
-  //   _destCtrl.text = place.name;
-  //   _destCtrl.addListener(_onQueryChanged);
+  Future<void> _selectPlaceStart(Place start) async {
+    FocusScope.of(context).unfocus();
+    _originCtrl.removeListener(_onOrgQueryChanged);
+    _originCtrl.text = start.name;
+    _originCtrl.addListener(_onOrgQueryChanged);
 
-  //   setState(() {
-  //     _destination = place;
-  //     _suggestions = const [];
-  //     _routing = true;
-  //     _error = null;
-  //   });
+    setState(() {
+      _start = start;
+      // _destination = place;
+      _suggestions = const [];
+      _routing = true;
+      _error = null;
+    });
+  }
 
-  //   try {
-  //     final result = await GeoService.route(_origin, place.point);
-  //     if (!mounted) return;
-
-  //     setState(() => _route = result);
-
-  //     if (result != null && result.points.isNotEmpty) {
-  //       _mapController.fitCamera(
-  //         CameraFit.coordinates(
-  //           coordinates: result.points,
-  //           padding: const EdgeInsets.fromLTRB(50, 160, 50, 320),
-  //         ),
-  //       );
-  //     }
-  //   } catch (_) {
-  //     if (mounted) setState(() => _error = 'Routing unavailable');
-  //   } finally {
-  //     if (mounted) setState(() => _routing = false);
-  //   }
-  // }
-
-  // void _reset() {
-  //   FocusScope.of(context).unfocus();
-  //   setState(() {
-  //     _destCtrl.clear();
-  //     _destination = null;
-  //     _route = null;
-  //     _suggestions = const [];
-  //     _expanded = false;
-  //     _error = null;
-  //   });
-  //   _mapController.move(_origin, MapsConfig.defaultZoom);
-  // }
+  void _reset() {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _originCtrl.clear();
+      _destCtrl.clear();
+      _start = null;
+      _destination = null;
+      _route = null;
+      _suggestions = const [];
+      _expanded = false;
+      _error = null;
+    });
+    _mapController.move(_origin, MapsConfig.defaultZoom);
+  }
 
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
     final bottom = MediaQuery.paddingOf(context).bottom;
     final accent = LGColor.resolve(LGColor.accent, context);
-    final showResults = _route != null && _destination != null;
+    final showResults =
+        _route != null && _destination != null && _start != null;
 
     return AppShell(
       showBottomNav: true,
@@ -183,150 +226,154 @@ class _MapPageState extends State<MapPage> {
       child: Stack(
         children: [
           Positioned.fill(
-            child: GoogleMap(
-              onMapCreated: _onMapCreated,
-              initialCameraPosition: CameraPosition(
-                target: _center,
-                zoom: 11.0,
+            child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: _origin,
+                initialZoom: MapsConfig.defaultZoom,
+                onTap: (_, __) => FocusScope.of(context).unfocus(),
               ),
-              markers: {
-                const Marker(
-                  markerId: MarkerId('Sydney'),
-                  position: LatLng(-33.86, 151.20),
-                )
-              },
-              // Crucial: Only enable the MyLocation layer if permission is granted
-              myLocationEnabled: _mapPermission,
-              myLocationButtonEnabled: _mapPermission,
-              // options: MapOptions(
-              //   initialCenter: _origin,
-              //   initialZoom: MapsConfig.defaultZoom,
-              //   onTap: (_, __) => FocusScope.of(context).unfocus(),
-              // ),
-              // children: [
-              //   TileLayer(
-              //     urlTemplate: MapsConfig.tileUrl,
-              //     userAgentPackageName: MapsConfig.userAgent,
-              //     maxNativeZoom: 19,
-              //   ),
-              //   if (_route != null)
-              //     PolylineLayer(
-              //       polylines: [
-              //         Polyline(
-              //           points: _route!.points,
-              //           strokeWidth: 6,
-              //           color: accent,
-              //           borderStrokeWidth: 2,
-              //           borderColor: const Color(0x33FFFFFF),
-              //         ),
-              //       ],
-              //     ),
-                // MarkerLayer(
-                //   markers: [
-                //     Marker(
-                //       point: _origin,
-                //       width: 22,
-                //       height: 22,
-                //       child: const _OriginDot(),
-                //     ),
-                //     if (_destination != null)
-                //       Marker(
-                //         point: _destination!.point,
-                //         width: 34,
-                //         height: 34,
-                //         child: _DestinationPin(color: accent),
-                //       ),
-                //   ],
-                // ),
-              // ],
+              children: [
+                TileLayer(
+                  urlTemplate: MapsConfig.tileUrl,
+                  userAgentPackageName: MapsConfig.userAgent,
+                  maxNativeZoom: 19,
+                ),
+                if (_route != null)
+                  PolylineLayer(
+                    polylines: [
+                      Polyline(
+                        points: _route!.points,
+                        strokeWidth: 6,
+                        color: accent,
+                        borderStrokeWidth: 2,
+                        borderColor: const Color(0x33FFFFFF),
+                      ),
+                    ],
+                  ),
+                MarkerLayer(
+                  markers: [
+                    if (_start == null && _destination == null)
+                      Marker(
+                        point: _origin,
+                        width: 22,
+                        height: 22,
+                        child: const _OriginDot(),
+                      ),
+                    if (_start != null)
+                      Marker(
+                        point: _start!.point,
+                        width: 24,
+                        height: 24,
+                        child: const _OriginDot(),
+                      ),
+                    if (_destination != null)
+                      Marker(
+                        point: _destination!.point,
+                        width: 34,
+                        height: 34,
+                        child: _DestinationPin(color: accent),
+                      ),
+                  ],
+                ),
+              ],
             ),
           ),
 
-          // Positioned(
-          //   top: top + LGGap.md,
-          //   left: LGGap.xl,
-          //   right: LGGap.xl,
-          //   child: _SearchCard(
-          //     originCtrl: _originCtrl,
-          //     destCtrl: _destCtrl,
-          //     destFocus: _destFocus,
-          //     expanded: _expanded,
-          //     searching: _searching,
-          //     suggestions: _suggestions,
-          //     onSelect: _selectPlace,
-          //     onClear: _reset,
-          //   ),
-          // ),
+          /// Destination Search Bar
+          Positioned(
+            top: top + LGGap.md,
+            left: LGGap.xl,
+            right: LGGap.xl,
+            child: _SearchCard(
+              originCtrl: _originCtrl,
+              originFocus: _originFocus,
+              destCtrl: _destCtrl,
+              destFocus: _destFocus,
+              expanded: _expanded,
+              searchStart: _searchingStart,
+              searchDest: _searchingDest,
+              suggestions: _suggestions,
+              onSelectStart: _selectPlaceStart,
+              onSelectDest: _selectPlaceDest,
+              onClear: _reset,
+            ),
+          ),
 
-          // Positioned(
-          //   right: LGGap.xl,
-          //   bottom: bottom + AppShell.navHeight + (showResults ? 300 : LGGap.section),
-          //   child: Column(
-          //     children: [
-          //       GlassIconButton(
-          //         icon: CupertinoIcons.location_fill,
-          //         semanticLabel: 'Centre on my location',
-          //         size: 42,
-          //         color: accent,
-          //         onPressed: () => _mapController.move(_origin, 15),
-          //       ),
-          //       const SizedBox(height: LGGap.md),
-          //       GlassIconButton(
-          //         icon: CupertinoIcons.plus,
-          //         semanticLabel: 'Zoom in',
-          //         size: 42,
-          //         onPressed: () => _mapController.move(
-          //           _mapController.camera.center,
-          //           _mapController.camera.zoom + 1,
-          //         ),
-          //       ),
-          //       const SizedBox(height: LGGap.sm),
-          //       GlassIconButton(
-          //         icon: CupertinoIcons.minus,
-          //         semanticLabel: 'Zoom out',
-          //         size: 42,
-          //         onPressed: () => _mapController.move(
-          //           _mapController.camera.center,
-          //           _mapController.camera.zoom - 1,
-          //         ),
-          //       ),
-          //     ],
-          //   ),
-          // ),
+          Positioned(
+            right: LGGap.xl,
+            bottom:
+                bottom +
+                AppShell.navHeight +
+                (showResults ? 300 : LGGap.section),
+            child: Column(
+              children: [
+                GlassIconButton(
+                  icon: CupertinoIcons.location_fill,
+                  semanticLabel: 'Centre on my location',
+                  size: 42,
+                  color: accent,
+                  onPressed: () => _mapController.move(_origin, 15),
+                ),
+                const SizedBox(height: LGGap.md),
+                GlassIconButton(
+                  icon: CupertinoIcons.plus,
+                  semanticLabel: 'Zoom in',
+                  size: 42,
+                  onPressed: () => _mapController.move(
+                    _mapController.camera.center,
+                    _mapController.camera.zoom + 1,
+                  ),
+                ),
+                const SizedBox(height: LGGap.sm),
+                GlassIconButton(
+                  icon: CupertinoIcons.minus,
+                  semanticLabel: 'Zoom out',
+                  size: 42,
+                  onPressed: () => _mapController.move(
+                    _mapController.camera.center,
+                    _mapController.camera.zoom - 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-          // if (!showResults)
-          //   Positioned(
-          //     left: LGGap.xl,
-          //     bottom: bottom + AppShell.navHeight + LGGap.md,
-          //     child: const _Attribution(),
-          //   ),
+          if (!showResults)
+            Positioned(
+              left: LGGap.xl,
+              bottom: bottom + AppShell.navHeight + LGGap.md,
+              child: const _Attribution(),
+            ),
 
-          // if (_routing)
-          //   Positioned(
-          //     left: 0,
-          //     right: 0,
-          //     bottom: bottom + AppShell.navHeight + 60,
-          //     child: const Center(child: GlassLoader()),
-          //   ),
+          if (_routing)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: bottom + AppShell.navHeight + 60,
+              child: const Center(child: GlassLoader()),
+            ),
 
-          // if (_error != null && !_routing)
-          //   Positioned(
-          //     left: LGGap.xl,
-          //     right: LGGap.xl,
-          //     bottom: bottom + AppShell.navHeight + 60,
-          //     child: _ErrorCard(message: _error!),
-          //   ),
+          if (_error != null && !_routing)
+            Positioned(
+              left: LGGap.xl,
+              right: LGGap.xl,
+              bottom: bottom + AppShell.navHeight + 60,
+              child: _ErrorCard(message: _error!),
+            ),
 
-          // if (showResults)
-          //   Align(
-          //     alignment: Alignment.bottomCenter,
-          //     child: _RoutesSheet(
-          //       mode: _mode,
-          //       onModeChanged: (m) => setState(() => _mode = m),
-          //       destination: _destination!,
-          //       route: _route!,
-          //     ),
-          //   ),
+          if (showResults)
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: _RoutesSheet(
+                onReset: _reset,
+                mode: _mode,
+                onModeChanged: (m) => setState(() => _mode = m),
+                start: _start!,
+                destination: _destination!,
+                route: _route!,
+              ),
+            ),
         ],
       ),
     );
@@ -366,8 +413,11 @@ class _DestinationPin extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: const Color(0xFFFFFFFF), width: 3),
       ),
-      child: const Icon(CupertinoIcons.flag_fill,
-          size: 14, color: Color(0xFFFFFFFF)),
+      child: const Icon(
+        CupertinoIcons.flag_fill,
+        size: 14,
+        color: Color(0xFFFFFFFF),
+      ),
     );
   }
 }
@@ -382,12 +432,15 @@ class _Attribution extends StatelessWidget {
       radius: LGRadius.pill,
       blur: LGGlass.blurLight,
       dense: true,
-      padding: const EdgeInsets.symmetric(horizontal: LGGap.lg, vertical: LGGap.xs),
+      padding: const EdgeInsets.symmetric(
+        horizontal: LGGap.lg,
+        vertical: LGGap.xs,
+      ),
       child: Text(
         MapsConfig.attribution,
-        style: LGText.caption2(context).copyWith(
-          color: LGColor.resolve(LGColor.secondaryLabel, context),
-        ),
+        style: LGText.caption2(
+          context,
+        ).copyWith(color: LGColor.resolve(LGColor.secondaryLabel, context)),
       ),
     );
   }
@@ -409,7 +462,11 @@ class _ErrorCard extends StatelessWidget {
       padding: const EdgeInsets.all(LGGap.edge),
       child: Row(
         children: [
-          Icon(CupertinoIcons.exclamationmark_triangle_fill, size: 17, color: danger),
+          Icon(
+            CupertinoIcons.exclamationmark_triangle_fill,
+            size: 17,
+            color: danger,
+          ),
           const SizedBox(width: LGGap.xl),
           Expanded(child: Text(message, style: LGText.subhead(context))),
         ],
@@ -423,20 +480,26 @@ class _SearchCard extends StatelessWidget {
     required this.originCtrl,
     required this.destCtrl,
     required this.destFocus,
+    required this.originFocus,
     required this.expanded,
-    required this.searching,
+    required this.searchStart,
+    required this.searchDest,
     required this.suggestions,
-    required this.onSelect,
+    required this.onSelectStart,
+    required this.onSelectDest,
     required this.onClear,
   });
 
   final TextEditingController originCtrl;
   final TextEditingController destCtrl;
   final FocusNode destFocus;
+  final FocusNode originFocus;
   final bool expanded;
-  final bool searching;
+  final bool searchStart;
+  final bool searchDest;
   final List<Place> suggestions;
-  final ValueChanged<Place> onSelect;
+  final ValueChanged<Place> onSelectStart;
+  final ValueChanged<Place> onSelectDest;
   final VoidCallback onClear;
 
   @override
@@ -457,36 +520,130 @@ class _SearchCard extends StatelessWidget {
           children: [
             if (expanded) ...[
               GlassField(
+                key: const ValueKey('origin-search-field'),
+                onTap: () {
+                  print('Origin Search Bar Tapped');
+                },
+                focusNode: originFocus,
                 controller: originCtrl,
                 placeholder: 'Start',
                 icon: CupertinoIcons.circle,
-                textInputAction: TextInputAction.next,
+                textInputAction: TextInputAction.search,
+                // Starting point search
+                suffix: searchStart
+                    ? const CupertinoActivityIndicator(radius: 8)
+                    : (originCtrl.text.isEmpty
+                          ? null
+                          : GlassTappable(
+                              haptic: false,
+                              scale: 0.85,
+                              onTap: onClear,
+                              child: Icon(
+                                CupertinoIcons.clear_circled_solid,
+                                size: 17,
+                                color: LGColor.resolve(
+                                  LGColor.tertiaryLabel,
+                                  context,
+                                ),
+                              ),
+                            )),
               ),
+              if (suggestions.isNotEmpty && originFocus.hasFocus) ...[
+                // const SizedBox(height: LGGap.md),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 240),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: suggestions.length,
+                    separatorBuilder: (context, _) => Container(
+                      height: 0.33,
+                      margin: const EdgeInsets.only(left: 34),
+                      color: LGColor.resolve(LGColor.separator, context),
+                    ),
+                    itemBuilder: (context, i) {
+                      final place = suggestions[i];
+                      return GlassTappable(
+                        haptic: false,
+                        scale: 0.99,
+                        onTap: () => onSelectStart(place),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: LGGap.lg,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                CupertinoIcons.placemark,
+                                size: 16,
+                                color: secondary,
+                              ),
+                              const SizedBox(width: LGGap.xl),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      place.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: LGText.subhead(context),
+                                    ),
+                                    if (place.detail.isNotEmpty)
+                                      Text(
+                                        place.detail,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: LGText.caption1(
+                                          context,
+                                        ).copyWith(color: secondary),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
               const SizedBox(height: LGGap.md),
             ],
             GlassField(
+              key: const ValueKey('dest-search-field'),
+              onTap: () {
+                print('Destination Search Bar Tapped');
+                // FocusScope.of(context).requestFocus(destFocus);
+              },
               controller: destCtrl,
               focusNode: destFocus,
               placeholder: 'Where to?',
               icon: CupertinoIcons.search,
               textInputAction: TextInputAction.search,
-              suffix: searching
+              // Destination Searching point
+              suffix: searchDest
                   ? const CupertinoActivityIndicator(radius: 8)
                   : (destCtrl.text.isEmpty
-                      ? null
-                      : GlassTappable(
-                          haptic: false,
-                          scale: 0.85,
-                          onTap: onClear,
-                          child: Icon(
-                            CupertinoIcons.clear_circled_solid,
-                            size: 17,
-                            color: LGColor.resolve(LGColor.tertiaryLabel, context),
-                          ),
-                        )),
+                        ? null
+                        : GlassTappable(
+                            haptic: false,
+                            scale: 0.85,
+                            onTap: onClear,
+                            child: Icon(
+                              CupertinoIcons.clear_circled_solid,
+                              size: 17,
+                              color: LGColor.resolve(
+                                LGColor.tertiaryLabel,
+                                context,
+                              ),
+                            ),
+                          )),
             ),
-            if (suggestions.isNotEmpty) ...[
-              const SizedBox(height: LGGap.md),
+            if (suggestions.isNotEmpty && destFocus.hasFocus) ...[
+              // const SizedBox(height: LGGap.md),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 240),
                 child: ListView.separated(
@@ -503,12 +660,16 @@ class _SearchCard extends StatelessWidget {
                     return GlassTappable(
                       haptic: false,
                       scale: 0.99,
-                      onTap: () => onSelect(place),
+                      onTap: () => onSelectDest(place),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: LGGap.lg),
                         child: Row(
                           children: [
-                            Icon(CupertinoIcons.placemark, size: 16, color: secondary),
+                            Icon(
+                              CupertinoIcons.placemark,
+                              size: 16,
+                              color: secondary,
+                            ),
                             const SizedBox(width: LGGap.xl),
                             Expanded(
                               child: Column(
@@ -526,8 +687,9 @@ class _SearchCard extends StatelessWidget {
                                       place.detail,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: LGText.caption1(context)
-                                          .copyWith(color: secondary),
+                                      style: LGText.caption1(
+                                        context,
+                                      ).copyWith(color: secondary),
                                     ),
                                 ],
                               ),
@@ -551,14 +713,18 @@ class _RoutesSheet extends StatelessWidget {
   const _RoutesSheet({
     required this.mode,
     required this.onModeChanged,
+    required this.start,
     required this.destination,
     required this.route,
+    required this.onReset,
   });
 
   final TravelMode mode;
   final ValueChanged<TravelMode> onModeChanged;
+  final Place start;
   final Place destination;
   final RouteResult route;
+  final VoidCallback onReset;
 
   String _duration(Duration d) {
     if (d.inMinutes < 60) return '${d.inMinutes} min';
@@ -578,8 +744,7 @@ class _RoutesSheet extends StatelessWidget {
         duration: GeoService.estimateFor(m.key, km, route),
         saving: GeoService.savingKg(m.key, km),
       );
-    }).toList()
-      ..sort((a, b) => b.saving.compareTo(a.saving));
+    }).toList()..sort((a, b) => b.saving.compareTo(a.saving));
 
     return GlassSurface(
       radius: LGRadius.xl,
@@ -625,27 +790,115 @@ class _RoutesSheet extends StatelessWidget {
                 onTap: () => onModeChanged(option.mode),
                 child: Row(
                   children: [
-                    Icon(option.mode.icon, size: 18,
-                        color: LGColor.resolve(LGColor.secondaryLabel, context)),
+                    Icon(
+                      option.mode.icon,
+                      size: 18,
+                      color: LGColor.resolve(LGColor.secondaryLabel, context),
+                    ),
                     const SizedBox(width: LGGap.xl),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(_duration(option.duration),
-                              style: LGText.title3(context)),
-                          Text(option.mode.label,
-                              style: LGText.caption1(context)
-                                  .copyWith(color: secondary)),
+                          Text(
+                            _duration(option.duration),
+                            style: LGText.title3(context),
+                          ),
+                          Text(
+                            option.mode.label,
+                            style: LGText.caption1(
+                              context,
+                            ).copyWith(color: secondary),
+                          ),
                         ],
                       ),
                     ),
-                    if (option.saving > 0)
-                      GlassPill(
-                        label: '${option.saving.toStringAsFixed(2)} kg saved',
-                        color: eco,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (option.saving > 0)
+                          GlassPill(
+                            label:
+                                '${option.saving.toStringAsFixed(2)} kg saved',
+                            color: eco,
+                          ),
+                        const SizedBox(height: LGGap.md),
+                        // Only selected travel option have "onPressed" enabled
+                        if (mode == option.mode)
+                          CupertinoButton.filled(
+                            sizeStyle: CupertinoButtonSize.small,
+                            child: Text("Start"),
+                            onPressed: () {
+                              print("Trip completed");
+                              double distTraveled = km;
+                              double co2Saved = option.saving;
+                              print("trip distTraveled : ${distTraveled}");
+                              print("trip type: ${option.mode.label}");
+                              print("trip co2Saved: ${co2Saved}");
+
+                              UserData profile = AppData.current;
+
+                              // BEFORE THE TRIPS (FOR DEBUGGING AND TRACKING)
+                              print("Before the trip:");
+                              print(
+                                "week co2savedkg: ${profile.impact[ImpactRange.week]!.co2SavedKg}",
+                              );
+                              print(
+                                "week greenKm: ${profile.impact[ImpactRange.week]!.greenKm}",
+                              );
+                              print(
+                                "week drivenKm: ${profile.impact[ImpactRange.week]!.drivenKm}",
+                              );
+                              print(
+                                "number of trips this week: ${profile.impact[ImpactRange.week]!.trips}",
+                              );
+
+                              // Trip activated
+                              profile.impact[ImpactRange.week]!.co2SavedKg =
+                                  profile.impact[ImpactRange.week]!.co2SavedKg +
+                                  double.parse(co2Saved.toStringAsPrecision(1));
+                              if (option.mode.label != "Drive") {
+                                profile.impact[ImpactRange.week]!.greenKm =
+                                    profile.impact[ImpactRange.week]!.greenKm +
+                                    double.parse(
+                                      distTraveled.toStringAsPrecision(1),
+                                    );
+                              } else {
+                                profile.impact[ImpactRange.week]!.greenKm =
+                                    profile.impact[ImpactRange.week]!.drivenKm +
+                                    double.parse(
+                                      distTraveled.toStringAsPrecision(1),
+                                    );
+                              }
+                              profile.impact[ImpactRange.week]!.trips += 1;
+
+                              // AFTER THE TRIPS (FOR DEBUGGING AND TRACKING)
+                              print("After the trip");
+                              print(
+                                "week co2savedkg: ${profile.impact[ImpactRange.week]!.co2SavedKg}",
+                              );
+                              print(
+                                "week greenKm: ${profile.impact[ImpactRange.week]!.greenKm}",
+                              );
+                              print(
+                                "week drivenKm: ${profile.impact[ImpactRange.week]!.drivenKm}",
+                              );
+
+                              onReset();
+                            },
+                          ),
+
+                        // Disable "onPressed" of unselected travel options
+                        if (mode != option.mode)
+                          CupertinoButton.filled(
+                            sizeStyle: CupertinoButtonSize.small,
+                            child: Text("Start"),
+                            onPressed: null,
+                            disabledColor: CupertinoColors.systemCyan,
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),

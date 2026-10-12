@@ -510,6 +510,7 @@ class GlassField extends StatelessWidget {
     super.key,
     required this.controller,
     required this.placeholder,
+    this.onTap,
     this.icon,
     this.obscure = false,
     this.keyboardType,
@@ -541,6 +542,7 @@ class GlassField extends StatelessWidget {
   final Widget? suffix;
   final Iterable<String>? autofillHints;
   final int maxLines;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -567,6 +569,7 @@ class GlassField extends StatelessWidget {
             ),
           ),
           child: CupertinoTextField(
+            onTap: onTap,
             controller: controller,
             focusNode: focusNode,
             placeholder: placeholder,

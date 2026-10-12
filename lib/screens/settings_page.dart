@@ -26,11 +26,19 @@ class SettingsPage extends StatelessWidget {
   Future<void> _signOut(BuildContext context) async {
     try {
       await UserDataSession.onSignedOut();
-      // await Amplify.API.
 
-      final result = await Amplify.Auth.signOut();
+      final result = await Amplify.Auth.signOut(
+        options: const SignOutOptions(
+          globalSignOut: true,
+        )
+      );
+      safePrint('Sign out result: ${result}');
+
+      final session = await Amplify.Auth.fetchAuthSession();
+      safePrint('Is user still signed in: ${session.isSignedIn}');
+      
       if (result is CognitoCompleteSignOut) {
-        safePrint('Sign out completed successfully');
+        safePrint('Sign out completed');
         Navigator.of(context).popUntil((r) => r.isFirst);
       }
     } on AuthException catch (e) {

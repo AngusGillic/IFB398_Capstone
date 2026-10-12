@@ -12,17 +12,29 @@ import '../services/api_client.dart';
 // ===========================================================================
 
 class LocalProfile {
-  const LocalProfile({
+  // const LocalProfile({
+  //   required this.firstName,
+  //   required this.fullName,
+  //   required this.email,
+  //   required this.memberSince,
+  // });
+
+  // final String firstName;
+  // final String fullName;
+  // final String email;
+  // final DateTime memberSince;
+
+  LocalProfile({
     required this.firstName,
     required this.fullName,
     required this.email,
     required this.memberSince,
   });
 
-  final String firstName;
-  final String fullName;
-  final String email;
-  final DateTime memberSince;
+  String firstName;
+  String fullName;
+  String email;
+  DateTime memberSince;
 
   String get initials {
     final parts = fullName.trim().split(RegExp(r'\s+'));
@@ -37,22 +49,33 @@ enum ImpactRange { week, month, year }
 
 extension ImpactRangeLabel on ImpactRange {
   String get label => switch (this) {
-        ImpactRange.week => 'Week',
-        ImpactRange.month => 'Month',
-        ImpactRange.year => 'Year',
-      };
+    ImpactRange.week => 'Week',
+    ImpactRange.month => 'Month',
+    ImpactRange.year => 'Year',
+  };
 
   String get periodNoun => switch (this) {
-        ImpactRange.week => 'week',
-        ImpactRange.month => 'month',
-        ImpactRange.year => 'year',
-      };
+    ImpactRange.week => 'week',
+    ImpactRange.month => 'month',
+    ImpactRange.year => 'year',
+  };
 }
 
 /// One period of travel. Missing figures default to zero so the charts can
 /// render an empty state rather than throw.
 class ImpactSeries {
-  const ImpactSeries({
+  // const ImpactSeries({
+  //   this.co2SavedKg = 0,
+  //   this.goalKg = 0,
+  //   this.values = const [],
+  //   this.labels = const [],
+  //   this.byMode = const {},
+  //   this.greenKm = 0,
+  //   this.drivenKm = 0,
+  //   this.changeVsPrevious = 0,
+  //   this.trips = 0,
+  // });
+  ImpactSeries({
     this.co2SavedKg = 0,
     this.goalKg = 0,
     this.values = const [],
@@ -65,36 +88,47 @@ class ImpactSeries {
   });
 
   /// CO2 avoided over the period, in kilograms.
-  final double co2SavedKg;
+  // final double co2SavedKg;
+  double co2SavedKg;
 
   /// Target for the period, in kilograms. Zero means no goal set.
-  final double goalKg;
+  // final double goalKg;
+  double goalKg;
 
   /// One bar per column. Must be the same length as [labels].
-  final List<double> values;
+  // final List<double> values;
+  List<double> values;
 
   /// Axis labels, for example M T W T F S S.
   final List<String> labels;
 
   /// Saving attributed to each transport mode.
-  final Map<String, double> byMode;
+  // final Map<String, double> byMode;
+  Map<String, double> byMode;
 
-  final double greenKm;
-  final double drivenKm;
+  // final double greenKm;
+  // final double drivenKm;
+  double greenKm;
+  double drivenKm;
 
   /// Change against the previous period, as a fraction. 0.38 means 38% more.
-  final double changeVsPrevious;
+  // final double changeVsPrevious;
 
-  final int trips;
+  // final int trips;
+  double changeVsPrevious;
 
-  static const empty = ImpactSeries();
+  int trips;
+
+  // static const empty = ImpactSeries();
+  static final empty = ImpactSeries();
 
   bool get hasData => co2SavedKg > 0 || trips > 0 || values.any((v) => v > 0);
 
   double get totalKm => greenKm + drivenKm;
   double get greenShare => totalKm <= 0 ? 0 : greenKm / totalKm;
 
-  double get goalProgress => goalKg <= 0 ? 0 : (co2SavedKg / goalKg).clamp(0.0, 2.0);
+  double get goalProgress =>
+      goalKg <= 0 ? 0 : (co2SavedKg / goalKg).clamp(0.0, 2.0);
 
   /// Target per column, for the dashed goal line.
   double? get goalPerColumn {
@@ -118,6 +152,11 @@ class ImpactSeries {
 
 /// Running totals since the account was created.
 class LifetimeImpact {
+  // const LifetimeImpact({
+  //   required this.co2SavedKg,
+  //   required this.totalTrips,
+  //   required this.totalKm,
+  // });
   const LifetimeImpact({
     required this.co2SavedKg,
     required this.totalTrips,

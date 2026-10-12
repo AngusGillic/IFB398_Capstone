@@ -255,7 +255,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   text: 'Sign up',
                   onTap: () =>
                       // For debugging only
-                      // _open(context, VerifyEmailPage())
+                      // _replace(context, VerifyEmailPage())
                       isFormValidated(context) ? {
                         _register(context),
                         FocusManager.instance.primaryFocus?.unfocus()
@@ -263,7 +263,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(
-                  onTap: () => _open(context, const LoginPage()),
+                  onTap: () => _replace(context, const LoginPage()),
                   child: const Text.rich(
                     TextSpan(
                       text: 'Already have an account? ',
