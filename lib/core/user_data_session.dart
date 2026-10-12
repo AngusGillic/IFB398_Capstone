@@ -51,7 +51,7 @@ class UserDataSession {
     try {
       // await _resetInMemoryServices();
       // StudyAssignmentService.instance.resetForUserSwitch();
-      await _clearDataStoreLocal();
+      // await _clearDataStoreLocal();
       // await LocalTripDb().closeForUserSwitch();
       // await UserLocalScope.bindUser(null);
       _boundUserId = null;
@@ -138,16 +138,16 @@ class UserDataSession {
     return null;
   }
 
-  static Future<void> _clearDataStoreLocal() async {
-    if (!Amplify.isConfigured) return;
-    try {
-      // DataStoreSync.resetReadyFlag();
-      await Amplify.DataStore.clear();
-      debugPrint('UserDataSession: DataStore.clear() for account isolation');
-    } catch (e) {
-      debugPrint('UserDataSession DataStore.clear: $e');
-    }
-  }
+  // static Future<void> _clearDataStoreLocal() async {
+  //   if (!Amplify.isConfigured) return;
+  //   try {
+  //     // DataStoreSync.resetReadyFlag();
+  //     await Amplify.DataStore.clear();
+  //     debugPrint('UserDataSession: DataStore.clear() for account isolation');
+  //   } catch (e) {
+  //     debugPrint('UserDataSession DataStore.clear: $e');
+  //   }
+  // }
 
   // static Future<void> _resetInMemoryServices() async {
   //   PointsService.instance.resetForUserSwitch();

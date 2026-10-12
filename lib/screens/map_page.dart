@@ -366,6 +366,7 @@ class _MapPageState extends State<MapPage> {
             Align(
               alignment: Alignment.bottomCenter,
               child: _RoutesSheet(
+                onReset: _reset,
                 mode: _mode,
                 onModeChanged: (m) => setState(() => _mode = m),
                 start: _start!,
@@ -486,7 +487,6 @@ class _SearchCard extends StatelessWidget {
     required this.suggestions,
     required this.onSelectStart,
     required this.onSelectDest,
-
     required this.onClear,
   });
 
@@ -716,6 +716,7 @@ class _RoutesSheet extends StatelessWidget {
     required this.start,
     required this.destination,
     required this.route,
+    required this.onReset,
   });
 
   final TravelMode mode;
@@ -723,6 +724,7 @@ class _RoutesSheet extends StatelessWidget {
   final Place start;
   final Place destination;
   final RouteResult route;
+  final VoidCallback onReset;
 
   String _duration(Duration d) {
     if (d.inMinutes < 60) return '${d.inMinutes} min';
@@ -828,7 +830,6 @@ class _RoutesSheet extends StatelessWidget {
                             sizeStyle: CupertinoButtonSize.small,
                             child: Text("Start"),
                             onPressed: () {
-                              print("YES");
                               print("Trip completed");
                               double distTraveled = km;
                               double co2Saved = option.saving;
@@ -849,32 +850,42 @@ class _RoutesSheet extends StatelessWidget {
                               print(
                                 "week drivenKm: ${profile.impact[ImpactRange.week]!.drivenKm}",
                               );
+                              print(
+                                "number of trips this week: ${profile.impact[ImpactRange.week]!.trips}",
+                              );
 
                               // Trip activated
                               profile.impact[ImpactRange.week]!.co2SavedKg =
                                   profile.impact[ImpactRange.week]!.co2SavedKg +
-                                  co2Saved;
+                                  double.parse(co2Saved.toStringAsPrecision(1));
                               if (option.mode.label != "Drive") {
                                 profile.impact[ImpactRange.week]!.greenKm =
                                     profile.impact[ImpactRange.week]!.greenKm +
-                                    distTraveled;
+                                    double.parse(
+                                      distTraveled.toStringAsPrecision(1),
+                                    );
                               } else {
                                 profile.impact[ImpactRange.week]!.greenKm =
                                     profile.impact[ImpactRange.week]!.drivenKm +
-                                    distTraveled;
+                                    double.parse(
+                                      distTraveled.toStringAsPrecision(1),
+                                    );
                               }
+                              profile.impact[ImpactRange.week]!.trips += 1;
 
                               // AFTER THE TRIPS (FOR DEBUGGING AND TRACKING)
                               print("After the trip");
                               print(
-                                "week co2savedkg: ${profile.impact[ImpactRange.week]!.co2SavedKg.toStringAsFixed(2)}",
+                                "week co2savedkg: ${profile.impact[ImpactRange.week]!.co2SavedKg}",
                               );
                               print(
-                                "week greenKm: ${profile.impact[ImpactRange.week]!.greenKm.toStringAsFixed(2)}",
+                                "week greenKm: ${profile.impact[ImpactRange.week]!.greenKm}",
                               );
                               print(
-                                "week drivenKm: ${profile.impact[ImpactRange.week]!.drivenKm.toStringAsFixed(2)}",
+                                "week drivenKm: ${profile.impact[ImpactRange.week]!.drivenKm}",
                               );
+
+                              onReset();
                             },
                           ),
 
