@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../core/pet_data.dart';
 import '../widgets/pet_data_view.dart';
+import '../widgets/pet_avatar.dart';
 import '../models/pet.dart';
 import '../ui/entrance.dart';
 import '../ui/glass.dart';
@@ -211,7 +212,7 @@ class _NextUp extends StatelessWidget {
       shadows: LGShadow.low(context),
       child: Row(
         children: [
-          _PetArt(size: 46, accent: pet.accent, dimmed: true),
+          _PetArt(pet: pet, size: 46, dimmed: true),
           const SizedBox(width: LGGap.edge),
           Expanded(
             child: Column(
@@ -307,7 +308,7 @@ class _Hero extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _PetArt(size: 124, accent: pet.accent, dimmed: !unlocked, locked: !unlocked),
+          _PetArt(pet: pet, size: 124, dimmed: !unlocked, locked: !unlocked),
           const SizedBox(height: LGGap.edge),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -387,7 +388,7 @@ class _PetTile extends StatelessWidget {
             children: [
               _PetArt(
                 size: 50,
-                accent: pet.accent,
+                pet: pet,
                 dimmed: !unlocked,
                 locked: !unlocked,
               ),
@@ -419,64 +420,25 @@ class _PetTile extends StatelessWidget {
   }
 }
 
-/// Artwork slot. Replace the inner box with Image.asset.
 class _PetArt extends StatelessWidget {
-  const _PetArt({
-    required this.size,
-    required this.accent,
-    this.dimmed = false,
-    this.locked = false,
-  });
+  const _PetArt({required this.pet, required this.size, this.dimmed = false, this.locked = false});
 
+  final Pet pet;
   final double size;
-  final Color accent;
   final bool dimmed;
   final bool locked;
 
   @override
-  Widget build(BuildContext context) {
-    final dark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
-    final radius = size > 80 ? LGRadius.lg : LGRadius.sm;
-
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            decoration: ShapeDecoration(
-              color: accent.withValues(alpha: dimmed ? 0.06 : 0.14),
-              shape: LGShape.border(radius),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.all(size * 0.11),
-            child: Opacity(
-              opacity: dimmed ? 0.35 : 1,
-              child: Container(
-                decoration: ShapeDecoration(
-                  color: dark ? const Color(0xFF2C2C2E) : const Color(0xFFFFFFFF),
-                  shape: LGShape.border(
-                    radius - 3,
-                    side: BorderSide(
-                      color: LGColor.resolve(LGColor.separator, context)
-                          .withValues(alpha: 0.35),
-                      width: 0.5,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          if (locked)
-            Icon(
-              CupertinoIcons.lock_fill,
-              size: size * 0.24,
-              color: LGColor.resolve(LGColor.secondaryLabel, context),
-            ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => SizedBox(
+    width: size,
+    height: size,
+    child: Stack(
+      alignment: Alignment.center,
+      children: [
+        Opacity(opacity: dimmed ? 0.35 : 1, child: PetAvatar(pet: pet, size: size)),
+        if (locked) Icon(CupertinoIcons.lock_fill, size: size * 0.24,
+          color: LGColor.resolve(LGColor.secondaryLabel, context)),
+      ],
+    ),
+  );
 }

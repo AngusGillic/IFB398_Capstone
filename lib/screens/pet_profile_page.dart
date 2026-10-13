@@ -10,6 +10,7 @@ import '../ui/glass_widgets.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/card_panels.dart';
 import '../widgets/charts.dart';
+import '../widgets/pet_avatar.dart';
 
 class PetProfilePage extends StatelessWidget {
   const PetProfilePage({super.key, this.data});
@@ -55,23 +56,7 @@ class PetProfilePage extends StatelessWidget {
           Entrance(index: 1, child: Center(
             child: Column(
               children: [
-                Container(
-                  width: 128,
-                  height: 128,
-                  decoration: ShapeDecoration(
-                    color: CupertinoTheme.brightnessOf(context) == Brightness.dark
-                        ? const Color(0xFF2C2C2E)
-                        : const Color(0xFFFFFFFF),
-                    shape: LGShape.border(
-                      LGRadius.lg,
-                      side: BorderSide(
-                        color: LGColor.resolve(LGColor.separator, context)
-                            .withValues(alpha: 0.4),
-                        width: 0.5,
-                      ),
-                    ),
-                  ),
-                ),
+                PetAvatar(pet: pet, size: 128),
                 const SizedBox(height: LGGap.edge),
                 Text(pet.name, style: LGText.title1(context)),
                 const SizedBox(height: LGGap.xxs),

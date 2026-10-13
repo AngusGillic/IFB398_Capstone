@@ -12,9 +12,10 @@ import '../ui/glass.dart';
 import '../ui/glass_widgets.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/card_panels.dart';
-import '../widgets/mock_painters.dart';
+import '../widgets/pet_avatar.dart';
 import 'activities_page.dart';
 import 'pet_profile_page.dart';
+import 'pet_selection_page.dart';
 
 class PetHomePage extends StatefulWidget {
   const PetHomePage({super.key, this.data});
@@ -233,6 +234,18 @@ class _PetHomePageState extends State<PetHomePage> {
               ],
             ),
           ),
+          const SizedBox(height: LGGap.md),
+          GlassButton(
+            label: 'Change pet',
+            onPressed: !_data.busy && !_data.needsRetry && !_data.needsRefresh
+                ? () => Navigator.of(context).pushReplacement(
+                    CupertinoPageRoute(
+                      builder: (_) => PetSelectionPage(data: widget.data),
+                    ),
+                  )
+                : null,
+            style: GlassButtonStyle.tinted,
+          ),
           const SizedBox(height: LGGap.edge),
 
           Entrance(
@@ -261,10 +274,12 @@ class _PetHomePageState extends State<PetHomePage> {
                           color: LGColor.resolve(LGColor.effort, context),
                         ),
                       ),
-                    const Positioned(
+                    Positioned(
                       right: 48,
                       top: 74,
-                      child: PlaceholderPet(size: 92),
+                      child: PetAvatar(
+                        pet: PetCatalogue.byId(state.selectedPetId),
+                      ),
                     ),
                     if ((state.inventory['small_pot'] ?? 0) > 0)
                       Positioned(

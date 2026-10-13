@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/garden_catalogue.dart';
 import '../models/pet_state.dart';
+import 'pet_repository.dart';
 
 class PetApiException implements Exception {
   const PetApiException(this.code, this.message, {this.status});
@@ -16,7 +17,7 @@ class PetApiException implements Exception {
   final int? status;
 }
 
-class PetApi {
+class PetApi extends PetRepository {
   PetApi({
     http.Client? client,
     this.baseUrl = const String.fromEnvironment('PETS_API_URL'),
