@@ -44,4 +44,14 @@ class GardenCatalogue {
       actions: Set.unmodifiable(actions.keys),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'items': items.map(
+        (id, item) =>
+            MapEntry(id, {'price': item.price, 'durable': item.durable}),
+      ),
+      'actions': {for (final action in actions) action: true},
+    };
+  }
 }
