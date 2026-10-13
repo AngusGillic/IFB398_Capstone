@@ -26,6 +26,48 @@ Future<void> openGarden(WidgetTester tester, PetData pets) async {
 }
 
 void main() {
+  testWidgets('Garden and profile fit small screens with larger text', (
+    tester,
+  ) async {
+    final pets = petsWith(
+      (_) async => http.Response(jsonEncode(petResponse()), 200),
+    );
+    pets.bindUser('alice');
+    await tester.binding.setSurfaceSize(const Size(320, 568));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    for (final page in [PetHomePage(data: pets), PetProfilePage(data: pets)]) {
+      await tester.pumpWidget(
+        CupertinoApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.5)),
+            child: child!,
+          ),
+          home: page,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    }
+  });
+
+  testWidgets('Activities shows the saved balance without fictional rewards', (
+    tester,
+  ) async {
+    final pets = petsWith(
+      (_) async => http.Response(jsonEncode(petResponse(coins: 37)), 200),
+    );
+    await openGarden(tester, pets);
+    await tester.tap(find.text('Activities'));
+    await tester.pumpAndSettle();
+    expect(find.text('37 coins'), findsOneWidget);
+    expect(find.text('No pet activities yet'), findsOneWidget);
+    expect(find.text('+10XP\n+100 coins'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   test(
     'Purchases wait for confirmation before changing coins or inventory',
     () async {

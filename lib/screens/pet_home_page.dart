@@ -211,11 +211,13 @@ class _PetHomePageState extends State<PetHomePage> {
             index: 0,
             child: Row(
               children: [
-                Text(
-                  "${PetCatalogue.byId(state.selectedPetId).name}'s garden",
-                  style: LGText.title2(context),
+                Expanded(
+                  child: Text(
+                    "${PetCatalogue.byId(state.selectedPetId).name}'s garden",
+                    style: LGText.title2(context),
+                  ),
                 ),
-                const Spacer(),
+                const SizedBox(width: LGGap.md),
                 GlassPill(
                   label: '${state.stats.coins}',
                   icon: CupertinoIcons.money_dollar_circle_fill,
@@ -305,7 +307,8 @@ class _PetHomePageState extends State<PetHomePage> {
                         child: GhostButton(
                           text: 'Activities',
                           icon: CupertinoIcons.flame_fill,
-                          onTap: () => _open(context, const ActivitiesPage()),
+                          onTap: () =>
+                              _open(context, ActivitiesPage(data: widget.data)),
                         ),
                       ),
                       const SizedBox(width: LGGap.lg),
@@ -344,7 +347,7 @@ class _PetHomePageState extends State<PetHomePage> {
                         icon: CupertinoIcons.sun_max_fill,
                         label: 'Sunlight',
                         detail: cooldown > Duration.zero
-                            ? 'Ready in ${cooldown.inMinutes + 1}m'
+                            ? 'Ready in ${(cooldown.inSeconds / 60).ceil()}m'
                             : 'Free',
                         onTap:
                             _ready &&

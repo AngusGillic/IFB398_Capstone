@@ -11,6 +11,29 @@ import 'package:travelly_flutter_ios_style/screens/pet_profile_page.dart';
 import 'support/pet_fixtures.dart' show petResponse, petsWith;
 
 void main() {
+  testWidgets('Selection fits a small screen with larger text', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 568));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final pets = petsWith(
+      (_) async => http.Response(jsonEncode(petResponse()), 200),
+    );
+    pets.bindUser('alice');
+    await tester.pumpWidget(
+      CupertinoApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: const TextScaler.linear(1.5)),
+          child: child!,
+        ),
+        home: PetSelectionPage(data: pets),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets(
     'Restores the saved pet and keeps the page open if selection fails',
     (tester) async {

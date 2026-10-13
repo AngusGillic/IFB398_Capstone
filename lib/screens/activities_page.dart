@@ -1,46 +1,46 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
-import '../theme/app_colors.dart';
+import '../core/pet_data.dart';
+import '../models/pet_state.dart';
+import '../ui/glass.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/card_panels.dart';
+import '../widgets/pet_data_view.dart';
 
 class ActivitiesPage extends StatelessWidget {
-  const ActivitiesPage({super.key});
+  const ActivitiesPage({super.key, this.data});
+
+  final PetData? data;
 
   @override
-  Widget build(BuildContext context) {
-    return AppShell(
-      showBottomNav: true,
-      selectedIndex: 4,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(2, 42, 2, 100),
-        children: [
-          const BackTitle(title: 'Activities', trailing: '🪙 200'),
-          const SizedBox(height: 16),
-          const Row(children: [Chip(label: Text('All')), SizedBox(width: 6), Chip(label: Text('Daily')), SizedBox(width: 6), Chip(label: Text('Care')), SizedBox(width: 6), Chip(label: Text('Training'))]),
-          const SizedBox(height: 12),
-          ...List.generate(6, (_) => const _ActivityRow()),
-        ],
-      ),
-    );
-  }
-}
+  Widget build(BuildContext context) => PetDataView(
+    data: data,
+    builder: (context, state) => _build(context, state),
+  );
 
-class _ActivityRow extends StatelessWidget {
-  const _ActivityRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return GreyPanel(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          CircleAvatar(backgroundColor: Colors.grey.shade300, child: const Icon(Icons.directions_walk, color: Colors.grey)),
-          const SizedBox(width: 12),
-          const Expanded(child: Text('Walk\n20min', style: TextStyle(fontWeight: FontWeight.w900))),
-          const Text('+10XP\n+100 coins', textAlign: TextAlign.right, style: TextStyle(color: AppColors.green, fontWeight: FontWeight.w900)),
-        ],
-      ),
-    );
-  }
+  Widget _build(BuildContext context, PetState state) => AppShell(
+    showBottomNav: true,
+    selectedIndex: 4,
+    child: ListView(
+      padding: const EdgeInsets.fromLTRB(2, 42, 2, 100),
+      children: [
+        PetStatus(data: data),
+        BackTitle(title: 'Activities', trailing: '${state.stats.coins} coins'),
+        const SizedBox(height: LGGap.edge),
+        GreyPanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('No pet activities yet', style: LGText.headline(context)),
+              const SizedBox(height: LGGap.md),
+              Text(
+                'Pet activities are coming later. You can care for your pet in the garden.',
+                style: LGText.footnote(context),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
 }

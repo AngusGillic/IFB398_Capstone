@@ -93,11 +93,13 @@ class PetProfilePage extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text('Level $level', style: LGText.headline(context)),
-                    const Spacer(),
-                    Text(
-                      '${(levelProgress * 100).round()}% to level ${level + 1}',
-                      style: LGText.caption1(context).copyWith(color: secondary),
+                    Expanded(child: Text('Level $level', style: LGText.headline(context))),
+                    const SizedBox(width: LGGap.md),
+                    Flexible(
+                      child: Text(
+                        '${(levelProgress * 100).round()}% to level ${level + 1}',
+                        style: LGText.caption1(context).copyWith(color: secondary),
+                      ),
                     ),
                   ],
                 ),
