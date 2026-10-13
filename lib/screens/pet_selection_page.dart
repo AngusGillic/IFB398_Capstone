@@ -38,7 +38,7 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
   Future<void> _confirm() async {
     if (!await _data.select(_focused) || !mounted) return;
     Navigator.of(context).pushReplacement(
-      CupertinoPageRoute(builder: (_) => const PetHomePage()),
+      CupertinoPageRoute(builder: (_) => PetHomePage(data: widget.data)),
     );
   }
 

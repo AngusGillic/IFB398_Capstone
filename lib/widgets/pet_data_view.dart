@@ -20,14 +20,22 @@ class PetDataView extends StatefulWidget {
 }
 
 class _PetDataViewState extends State<PetDataView> {
+  bool _checkingSession = true;
+
   @override
   void initState() {
     super.initState();
-    if (widget.data == null) {
-      unawaited(UserDataSession.onAuthenticated());
-    } else {
-      unawaited(widget.data!.load());
-    }
+    unawaited(
+      Future.microtask(() async {
+        if (!mounted) return;
+        if (widget.data == null) {
+          await UserDataSession.onAuthenticated();
+        } else {
+          await widget.data!.load();
+        }
+        if (mounted) setState(() => _checkingSession = false);
+      }),
+    );
   }
 
   @override
@@ -37,6 +45,7 @@ class _PetDataViewState extends State<PetDataView> {
       valueListenable: data,
       builder: (context, state, _) {
         if (state != null) return widget.builder(context, state);
+        final loading = data.busy || _checkingSession;
         return AppShell(
           showBottomNav: true,
           selectedIndex: 4,
@@ -44,15 +53,15 @@ class _PetDataViewState extends State<PetDataView> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (data.busy) const CupertinoActivityIndicator(),
+                if (loading) const CupertinoActivityIndicator(),
                 const SizedBox(height: LGGap.lg),
                 Text(
-                  data.busy
+                  loading
                       ? 'Loading your pet…'
                       : data.error ?? 'Sign in to see your pets.',
                   textAlign: TextAlign.center,
                 ),
-                if (!data.busy && data.signedIn) ...[
+                if (!loading && data.signedIn) ...[
                   const SizedBox(height: LGGap.lg),
                   GlassButton(
                     label: 'Try again',

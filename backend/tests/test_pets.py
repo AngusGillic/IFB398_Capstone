@@ -175,11 +175,14 @@ class PetsTests(unittest.TestCase):
         self.assertEqual(result['pet']['health'], 0.4)
 
     def test_sunlight_cooldown(self):
-        self.mutation('actions', 'sunlight')
+        _, state = self.mutation('actions', 'sunlight')
+        self.assertEqual(state['server_time'], '2026-10-13T00:00:00Z')
+        self.assertEqual(state['cooldowns']['sunlight'], '2026-10-13T01:00:00Z')
         with self.assertRaises(PetError) as error:
             self.mutation('actions', 'sunlight')
         self.assertEqual(error.exception.code, 'cooldown')
         self.now += timedelta(hours=1)
+        self.assertEqual(self.service.read('alice')['cooldowns'], {})
         self.mutation('actions', 'sunlight')
 
     def test_invalid_requests_and_unexposed_trip_route(self):

@@ -91,4 +91,5 @@ These are implementation defaults for review, not values found in the UI.
 Small pot and kennel purchases save ownership; displaying them is step four.
 
 Selection and profile use the configured Pets API. See `../PETS_BACKEND.md`
-for the Flutter configuration. Garden actions are connected in step four.
+for the Flutter configuration. Garden purchases, care actions, ownership displays and sunlight cooldowns
+are also connected. Deployment remains outside the current scope.

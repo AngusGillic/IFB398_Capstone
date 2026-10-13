@@ -6,6 +6,7 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/pet_state.dart';
+import '../models/garden_catalogue.dart';
 
 class PetApiException implements Exception {
   const PetApiException(this.code, this.message, {this.status});
@@ -41,6 +42,11 @@ class PetApi {
 
   Future<PetState> fetch(String owner) async =>
       PetState.fromJson(await _request(owner, 'GET', '/v1/me/pet'));
+
+  Future<GardenCatalogue> fetchCatalogue(String owner) async =>
+      GardenCatalogue.fromJson(
+        await _request(owner, 'GET', '/v1/me/pet/catalogue'),
+      );
 
   Future<PetState> save(
     String owner,

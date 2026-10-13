@@ -49,6 +49,11 @@ def snapshot(state, now):
         },
         'inventory': copy.deepcopy(state['inventory']),
         'co2_saved_kg': state['co2_saved_kg'], 'version': state['version'],
+        'server_time': now.isoformat().replace('+00:00', 'Z'),
+        'cooldowns': {
+            action: datetime.fromtimestamp(until, timezone.utc).isoformat().replace('+00:00', 'Z')
+            for action, until in pet['cooldowns'].items() if until > now.timestamp()
+        },
     }
 
 

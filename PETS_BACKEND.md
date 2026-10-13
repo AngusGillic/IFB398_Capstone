@@ -22,7 +22,9 @@ All successful requests below return this complete snapshot:
   },
   "inventory": {},
   "co2_saved_kg": 0.0,
-  "version": 0
+  "version": 0,
+  "server_time": "2026-10-13T00:00:00Z",
+  "cooldowns": {}
 }
 ```
 
@@ -106,7 +108,7 @@ confirmed Pets data from the configured API.
 3. Connect selection and profile to the API; handle loading, failures,
    relaunches and account changes. Complete.
 4. Implement garden purchases and care actions, including inventory, prices,
-   effects and cooldowns.
+   effects and cooldowns. Complete.
 5. Verify the complete flow with backend and client tests for unlocks, rewards,
    retries, concurrent updates and account isolation.
 
@@ -131,3 +133,22 @@ Selection waits for a successful write before opening the garden. Profile
 listens for updated care stats. Confirmed pet stats and lifetime savings also
 update `AppData`; loading the existing summary cannot replace them with its
 hardcoded figures.
+
+
+## Garden actions
+
+The garden loads prices and available actions from the server catalogue.
+Item menus show the current balance and owned quantities. Purchases require
+confirmation; water and fertiliser can be used from that menu when owned.
+Small pots and kennels appear in the garden after a confirmed purchase. More
+opens the catalogue. Pending or unresolved writes disable further actions
+until they complete or their original request is retried.
+
+Snapshots include `server_time` and a `cooldowns` map of action IDs to UTC
+expiry dates. The client measures elapsed time from the response, so a device
+clock offset does not unlock sunlight early. The server still enforces the
+cooldown. After retrying an uncertain write, the client reads fresh state to
+avoid treating an old receipt as the current balance or cooldown. Catalogue
+failures disable garden actions and provide a separate reload button.
+
+AWS deployment remains outside the current scope.

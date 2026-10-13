@@ -51,6 +51,22 @@ void main() {
     expect(() => PetState.fromJson(json), throwsFormatException);
   });
 
+  test('Parses server time and keeps cooldown dates immutable', () {
+    final json = snapshot()
+      ..['server_time'] = '2026-10-13T00:00:00Z'
+      ..['cooldowns'] = {'sunlight': '2026-10-13T01:00:00Z'};
+    final state = PetState.fromJson(json);
+    expect(state.serverTime, DateTime.utc(2026, 10, 13));
+    expect(state.cooldowns['sunlight'], DateTime.utc(2026, 10, 13, 1));
+    expect(() => state.cooldowns.clear(), throwsUnsupportedError);
+  });
+
+  test('Rejects cooldown dates without a timezone', () {
+    final json = snapshot()
+      ..['cooldowns'] = {'sunlight': '2026-10-13T01:00:00'};
+    expect(() => PetState.fromJson(json), throwsFormatException);
+  });
+
   test('Rejects an empty selection and a date without a timezone', () {
     final json = snapshot();
     json['selected_pet_id'] = '';

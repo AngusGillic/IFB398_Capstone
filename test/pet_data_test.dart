@@ -32,8 +32,17 @@ PetData petsWith(
   Future<http.Response> Function(http.Request) handler, {
   void Function(String)? ownerUsed,
   bool publish = false,
+  DateTime Function()? clock,
+  Future<http.Response> Function(http.Request)? catalogue,
 }) {
-  final client = MockClient(handler);
+  final client = MockClient((request) {
+    if (request.url.path.endsWith('/catalogue')) {
+      return catalogue != null
+          ? catalogue(request)
+          : Future.value(http.Response(jsonEncode(gardenResponse()), 200));
+    }
+    return handler(request);
+  });
   addTearDown(client.close);
   final data = PetData(
     api: PetApi(
@@ -46,10 +55,21 @@ PetData petsWith(
     ),
     onChanged: publish ? null : (_) {},
     onCleared: publish ? null : () {},
+    clock: clock,
   );
   addTearDown(data.dispose);
   return data;
 }
+
+Map<String, dynamic> gardenResponse({int waterPrice = 5}) => {
+  'items': {
+    'small_pot': {'price': 25, 'durable': true},
+    'water': {'price': waterPrice, 'durable': false},
+    'fertiliser': {'price': 10, 'durable': false},
+    'kennel': {'price': 50, 'durable': true},
+  },
+  'actions': {'water': {}, 'fertiliser': {}, 'sunlight': {}},
+};
 
 void main() {
   test(

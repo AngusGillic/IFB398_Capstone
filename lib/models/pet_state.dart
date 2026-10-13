@@ -8,6 +8,8 @@ class PetState {
     required this.inventory,
     required this.co2SavedKg,
     required this.version,
+    this.serverTime,
+    this.cooldowns = const {},
   });
 
   final String selectedPetId;
@@ -16,6 +18,8 @@ class PetState {
   final Map<String, int> inventory;
   final double co2SavedKg;
   final int version;
+  final DateTime? serverTime;
+  final Map<String, DateTime> cooldowns;
 
   factory PetState.fromJson(Map<String, dynamic> json) {
     final pet = json['pet'] as Map<String, dynamic>;
@@ -42,7 +46,21 @@ class PetState {
       ),
       co2SavedKg: _number(json['co2_saved_kg']),
       version: _wholeNumber(json['version']),
+      serverTime: json['server_time'] == null
+          ? null
+          : _utcDate(json['server_time']),
+      cooldowns: Map.unmodifiable(
+        ((json['cooldowns'] as Map<String, dynamic>?) ?? {}).map(
+          (id, until) => MapEntry(id, _utcDate(until)),
+        ),
+      ),
     );
+  }
+
+  static DateTime _utcDate(Object? value) {
+    final date = DateTime.parse(value as String);
+    if (!date.isUtc) throw const FormatException('Expected a UTC date');
+    return date;
   }
 
   static double _number(Object? value) {
