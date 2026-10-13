@@ -95,7 +95,7 @@ class PetsTests(unittest.TestCase):
         _, result = self.mutation('actions', 'water')
         self.assertEqual(result['pet']['coins'], 45)
         self.assertEqual(result['inventory']['water'], 0)
-        self.assertEqual(result['pet']['health'], 1)
+        self.assertEqual(result['pet']['health'], 0.9)
         before = self.service.read('alice')
         with self.assertRaises(PetError):
             self.mutation('actions', 'water')
@@ -172,7 +172,7 @@ class PetsTests(unittest.TestCase):
         _, result = self.mutation('selection', 'puppy')
         self.assertEqual(result['adopted_at'], adopted)
         self.assertEqual(result['pet']['days_together'], 3)
-        self.assertEqual(result['pet']['health'], 0.4)
+        self.assertEqual(result['pet']['health'], 0)
 
     def test_sunlight_cooldown(self):
         _, state = self.mutation('actions', 'sunlight')
@@ -226,6 +226,75 @@ class PetsTests(unittest.TestCase):
         self.assertEqual(state['co2_saved_kg'], 3)
         self.assertEqual(state['pet']['coins'], 30)
         self.assertEqual(self.service.credit_trip('alice', 'trip-1', 1), state)
+
+    def test_care_declines_offline_without_repeated_read_decay(self):
+        initial = self.service.read('alice')
+        self.now += timedelta(hours=5)
+        later = self.service.read('alice')
+        self.assertEqual(later['pet']['health'], 0.75)
+        self.assertEqual(later['pet']['energy'], 0.45)
+        self.assertEqual(later['pet']['happiness'], 0.65)
+        self.assertEqual(self.service.read('alice'), later)
+        self.assertEqual(initial['version'], later['version'])
+        self.service.credit_trip('alice', 'trip', 1)
+        self.assertEqual(self.service.read('alice')['pet'], later['pet'] | {'coins': 10})
+        self.now += timedelta(hours=1000)
+        state = self.service.read('alice')
+        for stat in ('health', 'energy', 'happiness'):
+            self.assertEqual(state['pet'][stat], 0)
+
+    def test_decorations_only_protect_future_progression(self):
+        self.service.credit_trip('alice', 'trip', 20)
+        self.now += timedelta(hours=2)
+        self.mutation('purchases', 'small_pot')
+        self.mutation('purchases', 'kennel')
+        before = self.service.read('alice')['pet']
+        self.assertEqual(before['happiness'], 0.71)
+        self.assertEqual(before['energy'], 0.57)
+        self.now += timedelta(hours=2)
+        after = self.service.read('alice')['pet']
+        self.assertEqual(after['happiness'], 0.69)
+        self.assertEqual(after['energy'], 0.53)
+
+    def test_full_health_does_not_waste_fertiliser(self):
+        self.service.credit_trip('alice', 'trip', 5)
+        self.mutation('purchases', 'fertiliser')
+        self.mutation('purchases', 'fertiliser')
+        self.mutation('actions', 'fertiliser')
+        before = self.service.read('alice')
+        with self.assertRaises(PetError) as error:
+            self.mutation('actions', 'fertiliser')
+        self.assertEqual(error.exception.code, 'care_not_needed')
+        self.assertEqual(self.service.read('alice'), before)
+        self.now += timedelta(hours=2)
+        _, after = self.mutation('actions', 'fertiliser')
+        self.assertEqual(after['pet']['health'], 1)
+        self.assertEqual(after['inventory']['fertiliser'], 0)
+
+    def test_existing_pet_and_backwards_clock_are_safe(self):
+        self.service.read('alice')
+        state = self.store.load('alice')
+        del state['pets']['puppy']['updated_at']
+        self.client.update_item(
+            TableName='pets', Key=self.store._key('alice', 'state'),
+            UpdateExpression='SET payload = :payload',
+            ExpressionAttributeValues={':payload': {'S': json.dumps(state)}},
+        )
+        self.now += timedelta(hours=1)
+        self.assertEqual(self.service.read('alice')['pet']['energy'], 0.61)
+        self.now -= timedelta(hours=2)
+        self.assertEqual(self.service.read('alice')['pet']['energy'], 0.65)
+
+    def test_care_retry_does_not_consume_twice_after_time_passes(self):
+        self.service.credit_trip('alice', 'trip', 5)
+        self.mutation('purchases', 'water')
+        body, result = self.mutation('actions', 'water')
+        self.now += timedelta(hours=3)
+        self.assertEqual(self.service.mutate('alice', 'actions', body), result)
+        latest = self.service.read('alice')
+        self.assertEqual(latest['inventory']['water'], 0)
+        self.assertEqual(latest['pet']['health'], 0.87)
+        self.assertEqual(latest['version'], result['version'])
 
     def test_catalogue_is_authenticated(self):
         result = self.request('alice', 'GET /v1/me/pet/catalogue')

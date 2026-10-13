@@ -126,8 +126,21 @@ class PetData extends ValueNotifier<PetState?> {
     return _save('purchases', {'item_id': id});
   }
 
+  bool needsCare(String id) {
+    final stats = value?.stats;
+    if (stats == null) return false;
+    return switch (id) {
+      'water' => stats.health < 1 || stats.happiness < 1,
+      'fertiliser' => stats.health < 1,
+      'sunlight' => stats.energy < 1,
+      _ => false,
+    };
+  }
+
   Future<bool> care(String id) {
-    if (shop?.actions.contains(id) != true || cooldownFor(id) > Duration.zero) {
+    if (shop?.actions.contains(id) != true ||
+        !needsCare(id) ||
+        cooldownFor(id) > Duration.zero) {
       return Future.value(false);
     }
     return _save('actions', {'action_id': id});

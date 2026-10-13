@@ -86,7 +86,7 @@ Do not send the hardcoded Flutter lifetime total to this handler.
 a small pot 25 and a kennel 50. Sunlight is free with a one-hour cooldown.
 Water and fertiliser are consumed; pots and kennels can be bought once.
 Verified trips earn 10 coins per kg saved, rounded down per trip. New pets
-start with full care stats; this change does not add automatic stat decay.
+start with 75% happiness, 65% energy and 80% health so care has an immediate effect.
 These are implementation defaults for review, not values found in the UI.
 Small pot and kennel purchases save ownership; displaying them is step four.
 
@@ -113,4 +113,20 @@ AWS services or genuine user credentials are used. Authentication is covered
 by handler checks and the template tests, rather than live Cognito sign-in.
 
 The fixtures under `test/support/` are shared by the client and UI tests. The
-local suite passed 32 Dart tests and 15 backend checks.
+local suite passed 36 Dart tests and 20 backend checks.
+
+
+## Care progression
+
+The server projects condition from each pet's last saved timestamp, including
+while the app is closed. Each hour loses 2 percentage points of happiness,
+4 of energy and 1 of health, bounded at zero. Reads do not repeatedly subtract
+the same elapsed time. Mutations settle elapsed decay before applying changes.
+Existing pets use their adoption date when no care timestamp is stored.
+
+Water adds 10 health and 5 happiness points; fertiliser adds 20 health points;
+sunlight adds 15 energy points with a one-hour cooldown. Stats are capped at
+100%. Care with no benefit is rejected without consuming an item. A small pot
+halves future happiness loss; a kennel halves future energy loss. Each pet
+keeps its own condition, while inventory stays shared within the account.
+The garden displays condition and refreshes saved state every minute.

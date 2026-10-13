@@ -26,6 +26,40 @@ Future<void> openGarden(WidgetTester tester, PetData pets) async {
 }
 
 void main() {
+  testWidgets('Full condition keeps owned care items and explains why', (
+    tester,
+  ) async {
+    final state = petResponse()..['inventory'] = {'fertiliser': 1};
+    (state['pet'] as Map<String, dynamic>).addAll(<String, num>{
+      'health': 1,
+      'energy': 1,
+      'happiness': 1,
+    });
+    var writes = 0;
+    final pets = petsWith((request) async {
+      if (request.method != 'GET') writes++;
+      return http.Response(jsonEncode(state), 200);
+    });
+    await openGarden(tester, pets);
+    expect(find.text('Health: 100%'), findsOneWidget);
+    expect(await pets.care('fertiliser'), isFalse);
+    expect(await pets.care('sunlight'), isFalse);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('pet-action-fertiliser')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('pet-action-fertiliser')));
+    await tester.pumpAndSettle();
+    expect(find.text('Use Fertiliser'), findsNothing);
+    expect(
+      find.textContaining('Your pet does not need this care yet.'),
+      findsOneWidget,
+    );
+    expect(writes, 0);
+    expect(pets.value!.inventory['fertiliser'], 1);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('Garden and profile fit small screens with larger text', (
     tester,
   ) async {
@@ -60,6 +94,8 @@ void main() {
       (_) async => http.Response(jsonEncode(petResponse(coins: 37)), 200),
     );
     await openGarden(tester, pets);
+    await tester.ensureVisible(find.text('Activities'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Activities'));
     await tester.pumpAndSettle();
     expect(find.text('37 coins'), findsOneWidget);
@@ -212,6 +248,10 @@ void main() {
       );
       await openGarden(tester, pets);
       expect(find.text('13 coins'), findsOneWidget);
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('pet-action-water')),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('pet-action-water')));
       await tester.pumpAndSettle();
       expect(writes, 0);
@@ -235,6 +275,8 @@ void main() {
     expect(find.byKey(const ValueKey('garden-small-pot')), findsOneWidget);
     expect(find.byKey(const ValueKey('garden-kennel')), findsOneWidget);
     expect(find.text('Owned'), findsNWidgets(2));
+    await tester.ensureVisible(find.byKey(const ValueKey('pet-action-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('pet-action-more')));
     await tester.pumpAndSettle();
     expect(find.text('Garden shop'), findsOneWidget);
@@ -254,11 +296,15 @@ void main() {
       return http.Response(jsonEncode(state), 200);
     });
     await openGarden(tester, pets);
+    await tester.ensureVisible(find.byKey(const ValueKey('pet-action-water')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('pet-action-water')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Use Water'));
     await tester.pumpAndSettle();
     expect(pets.value!.inventory['water'], 0);
+    await tester.ensureVisible(find.text('Profile'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
     expect(find.byType(PetProfilePage), findsOneWidget);

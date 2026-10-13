@@ -18,3 +18,5 @@ ACTIONS = {
 }
 
 COINS_PER_KG = 10
+
+CARE_DECAY_PER_HOUR = {'happiness': 0.02, 'energy': 0.04, 'health': 0.01}

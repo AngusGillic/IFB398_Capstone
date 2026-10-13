@@ -166,6 +166,22 @@ Final regression fixes clear personal data on non-JSON authentication errors,
 block further writes when a conflict refresh fails, and discard responses
 received after the client is disposed. Shared test data is in `test/support/`.
 
-The final run passed 32 Dart/client/UI/integration tests and 15 backend checks.
+The final run passed 36 Dart/client/UI/integration tests and 20 backend checks.
 The existing external trips worker still needs to invoke the prepared reward
 hook. Deployment remains outside the requested scope.
+
+
+## Care progression
+
+The server projects condition from each pet's last saved timestamp, including
+while the app is closed. Each hour loses 2 percentage points of happiness,
+4 of energy and 1 of health, bounded at zero. Reads do not repeatedly subtract
+the same elapsed time. Mutations settle elapsed decay before applying changes.
+Existing pets use their adoption date when no care timestamp is stored.
+
+Water adds 10 health and 5 happiness points; fertiliser adds 20 health points;
+sunlight adds 15 energy points with a one-hour cooldown. Stats are capped at
+100%. Care with no benefit is rejected without consuming an item. A small pot
+halves future happiness loss; a kennel halves future energy loss. Each pet
+keeps its own condition, while inventory stays shared within the account.
+The garden displays condition and refreshes saved state every minute.

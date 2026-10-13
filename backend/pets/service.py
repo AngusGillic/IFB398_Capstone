@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
-from catalogue import ACTIONS, COINS_PER_KG, ITEMS, PET_UNLOCKS
+from catalogue import ACTIONS, CARE_DECAY_PER_HOUR, COINS_PER_KG, ITEMS, PET_UNLOCKS
 
 
 class PetError(Exception):
@@ -22,7 +22,8 @@ class Conflict(Exception):
 def new_pet(now):
     return {
         'adopted_at': now.isoformat().replace('+00:00', 'Z'),
-        'happiness': 1.0, 'energy': 1.0, 'health': 1.0,
+        'happiness': 0.75, 'energy': 0.65, 'health': 0.8,
+        'updated_at': now.isoformat().replace('+00:00', 'Z'),
         'cooldowns': {},
     }
 
@@ -35,7 +36,24 @@ def new_state(now):
     }
 
 
+def progress(state, now):
+    updated = copy.deepcopy(state)
+    for pet in updated['pets'].values():
+        last = datetime.fromisoformat(pet.get('updated_at', pet['adopted_at']).replace('Z', '+00:00'))
+        hours = max(0, (now - last).total_seconds() / 3600)
+        rates = dict(CARE_DECAY_PER_HOUR)
+        if updated['inventory'].get('small_pot', 0):
+            rates['happiness'] *= 0.5
+        if updated['inventory'].get('kennel', 0):
+            rates['energy'] *= 0.5
+        for stat, rate in rates.items():
+            pet[stat] = max(0.0, round(pet[stat] - hours * rate, 6))
+        pet['updated_at'] = max(last, now).isoformat().replace('+00:00', 'Z')
+    return updated
+
+
 def snapshot(state, now):
+    state = progress(state, now)
     pet = state['pets'][state['selected_pet_id']]
     adopted = datetime.fromisoformat(pet['adopted_at'].replace('Z', '+00:00'))
     return {
@@ -98,7 +116,7 @@ class PetService:
         state = self._load(owner, now)
         if state['version'] != body['version']:
             raise PetError('stale_version', 'Reload your pet and try again')
-        updated = copy.deepcopy(state)
+        updated = progress(state, now)
         self._apply(updated, operation, body[field], now)
         updated['version'] += 1
         result = snapshot(updated, now)
@@ -141,6 +159,8 @@ class PetService:
         pet = state['pets'][state['selected_pet_id']]
         if pet['cooldowns'].get(value, 0) > now.timestamp():
             raise PetError('cooldown', 'This action is not ready yet')
+        if all(pet[stat] >= 1.0 for stat in action['effects']):
+            raise PetError('care_not_needed', 'Your pet does not need this care yet', 422)
         item = action.get('item')
         if item:
             quantity = state['inventory'].get(item, 0)
@@ -170,7 +190,7 @@ class PetService:
                 return previous
             now = self.clock()
             state = self._load(owner, now)
-            updated = copy.deepcopy(state)
+            updated = progress(state, now)
             updated['co2_saved_kg'] = float(Decimal(str(state['co2_saved_kg'])) + saved)
             updated['coins'] += int(saved * COINS_PER_KG)
             updated['version'] += 1

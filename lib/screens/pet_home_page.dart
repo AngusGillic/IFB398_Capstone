@@ -28,11 +28,15 @@ class PetHomePage extends StatefulWidget {
 class _PetHomePageState extends State<PetHomePage> {
   late final PetData _data = widget.data ?? PetData.instance;
   Timer? _timer;
+  Timer? _refresh;
 
   @override
   void initState() {
     super.initState();
     unawaited(Future.microtask(_data.loadShop));
+    _refresh = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted && !_data.busy && !_data.needsRetry) unawaited(_data.load());
+    });
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted && _data.value?.cooldowns.isNotEmpty == true) setState(() {});
     });
@@ -41,6 +45,7 @@ class _PetHomePageState extends State<PetHomePage> {
   @override
   void dispose() {
     _timer?.cancel();
+    _refresh?.cancel();
     super.dispose();
   }
 
@@ -91,6 +96,7 @@ class _PetHomePageState extends State<PetHomePage> {
               _ready &&
               quantity > 0 &&
               _data.shop!.actions.contains(id) &&
+              _data.needsCare(id) &&
               _data.cooldownFor(id) == Duration.zero;
           return CupertinoActionSheet(
             title: Text(available ? item.name : 'Garden item'),
@@ -98,7 +104,8 @@ class _PetHomePageState extends State<PetHomePage> {
               !available
                   ? 'Close this menu and try again.'
                   : '${item.price} coins · $quantity owned · ${state.stats.coins} coins available'
-                        '${!owned && state.stats.coins < item.price ? '\nNot enough coins yet.' : ''}',
+                        '${!owned && state.stats.coins < item.price ? '\nNot enough coins yet.' : ''}'
+                        '${_data.shop!.actions.contains(id) && !_data.needsCare(id) ? '\nYour pet does not need this care yet.' : ''}',
             ),
             actions: [
               if (canUse)
@@ -294,6 +301,39 @@ class _PetHomePageState extends State<PetHomePage> {
           ),
           const SizedBox(height: LGGap.edge),
 
+          GreyPanel(
+            padding: const EdgeInsets.all(LGGap.edge),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Care for your pet', style: LGText.headline(context)),
+                const SizedBox(height: LGGap.md),
+                for (final stat in [
+                  ('Happiness', state.stats.happiness),
+                  ('Energy', state.stats.energy),
+                  ('Health', state.stats.health),
+                ]) ...[
+                  Text(
+                    '${stat.$1}: ${(stat.$2 * 100).round()}%',
+                    style: LGText.footnote(context),
+                  ),
+                  const SizedBox(height: LGGap.xs),
+                  GlassProgress(value: stat.$2),
+                  const SizedBox(height: LGGap.md),
+                ],
+                Text(
+                  'Water restores health and happiness. Fertiliser restores health. Sunlight restores energy. Condition drops gradually, even while you are away.',
+                  style: LGText.footnote(context),
+                ),
+                const SizedBox(height: LGGap.sm),
+                Text(
+                  'A small pot slows happiness loss. A kennel slows energy loss.',
+                  style: LGText.footnote(context),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: LGGap.edge),
           Entrance(
             index: 2,
             child: GreyPanel(
@@ -348,10 +388,13 @@ class _PetHomePageState extends State<PetHomePage> {
                         label: 'Sunlight',
                         detail: cooldown > Duration.zero
                             ? 'Ready in ${(cooldown.inSeconds / 60).ceil()}m'
-                            : 'Free',
+                            : _data.needsCare('sunlight')
+                            ? 'Free'
+                            : 'Rested',
                         onTap:
                             _ready &&
                                 _data.shop!.actions.contains('sunlight') &&
+                                _data.needsCare('sunlight') &&
                                 cooldown == Duration.zero
                             ? () => _data.care('sunlight')
                             : null,
