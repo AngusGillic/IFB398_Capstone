@@ -5,8 +5,8 @@ import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:http/http.dart' as http;
 
-import '../models/pet_state.dart';
 import '../models/garden_catalogue.dart';
+import '../models/pet_state.dart';
 
 class PetApiException implements Exception {
   const PetApiException(this.code, this.message, {this.status});
@@ -95,18 +95,26 @@ class PetApi {
           .timeout(const Duration(seconds: 15));
       Map<String, dynamic>? json;
       try {
-        json = jsonDecode(response.body) as Map<String, dynamic>;
-      } catch (_) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) json = decoded;
+      } catch (_) {}
+      if (response.statusCode != 200) {
+        final code = json?['code'];
+        final message = json?['message'];
+        throw PetApiException(
+          code is String ? code : 'request_failed',
+          message is String
+              ? message
+              : response.statusCode == 401
+              ? 'Sign in to see your pets.'
+              : 'Please try again.',
+          status: response.statusCode,
+        );
+      }
+      if (json == null) {
         throw const PetApiException(
           'invalid_response',
           'Pets could not be loaded. Please try again.',
-        );
-      }
-      if (response.statusCode != 200) {
-        throw PetApiException(
-          json['code'] as String? ?? 'request_failed',
-          json['message'] as String? ?? 'Please try again.',
-          status: response.statusCode,
         );
       }
       return json;

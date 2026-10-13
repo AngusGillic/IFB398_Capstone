@@ -9,67 +9,7 @@ import 'package:travelly_flutter_ios_style/data/user_data.dart';
 import 'package:travelly_flutter_ios_style/models/pet.dart';
 import 'package:travelly_flutter_ios_style/services/pet_api.dart';
 
-Map<String, dynamic> petResponse({
-  String pet = 'puppy',
-  int version = 0,
-  int coins = 20,
-}) => {
-  'selected_pet_id': pet,
-  'adopted_at': '2026-10-13T00:00:00Z',
-  'pet': {
-    'coins': coins,
-    'happiness': 0.8,
-    'energy': 0.6,
-    'health': 0.9,
-    'days_together': 2,
-  },
-  'inventory': <String, int>{},
-  'co2_saved_kg': 10,
-  'version': version,
-};
-
-PetData petsWith(
-  Future<http.Response> Function(http.Request) handler, {
-  void Function(String)? ownerUsed,
-  bool publish = false,
-  DateTime Function()? clock,
-  Future<http.Response> Function(http.Request)? catalogue,
-}) {
-  final client = MockClient((request) {
-    if (request.url.path.endsWith('/catalogue')) {
-      return catalogue != null
-          ? catalogue(request)
-          : Future.value(http.Response(jsonEncode(gardenResponse()), 200));
-    }
-    return handler(request);
-  });
-  addTearDown(client.close);
-  final data = PetData(
-    api: PetApi(
-      client: client,
-      baseUrl: 'https://pets.example',
-      accessToken: (owner) async {
-        ownerUsed?.call(owner);
-        return 'token-$owner';
-      },
-    ),
-    onChanged: publish ? null : (_) {},
-    onCleared: publish ? null : () {},
-    clock: clock,
-  );
-  addTearDown(data.dispose);
-  return data;
-}
-
-Map<String, dynamic> gardenResponse({int waterPrice = 5}) => {
-  'items': {
-    'small_pot': {'price': 25, 'durable': true},
-    'water': {'price': waterPrice, 'durable': false},
-    'fertiliser': {'price': 10, 'durable': false},
-    'kennel': {'price': 50, 'durable': true},
-  },
-  'actions': {'water': {}, 'fertiliser': {}, 'sunlight': {}},
-};
+import 'support/pet_fixtures.dart';
 
 void main() {
   test(
@@ -242,6 +182,101 @@ void main() {
     expect(pets.value, isNull);
     expect(pets.signedIn, isFalse);
     expect(pets.busy, isFalse);
+  });
+
+  test('Non-JSON authentication errors clear personal state', () async {
+    var expired = false;
+    final pets = petsWith(
+      (_) async => expired
+          ? http.Response('Unauthorized', 401)
+          : http.Response(jsonEncode(petResponse(pet: 'koala')), 200),
+    );
+    pets.bindUser('alice');
+    await pets.load();
+    expired = true;
+    await pets.load();
+    expect(pets.value, isNull);
+    expect(pets.signedIn, isFalse);
+  });
+
+  test(
+    'A failed conflict refresh blocks writes until fresh state is loaded',
+    () async {
+      var reads = 0;
+      var writes = 0;
+      var offline = true;
+      final pets = petsWith((request) async {
+        if (request.method == 'GET') {
+          reads++;
+          if (reads > 1 && offline) throw http.ClientException('Offline');
+          return http.Response(
+            jsonEncode(petResponse(version: reads > 1 ? 1 : 0)),
+            200,
+          );
+        }
+        writes++;
+        return http.Response(
+          '{"code":"stale_version","message":"Reload your pet"}',
+          409,
+        );
+      });
+      pets.bindUser('alice');
+      await pets.load();
+      expect(await pets.select('koala'), isFalse);
+      expect(pets.needsRefresh, isTrue);
+      expect(await pets.select('frill'), isFalse);
+      expect(writes, 1);
+      offline = false;
+      await pets.load();
+      expect(pets.needsRefresh, isFalse);
+      expect(pets.value!.version, 1);
+    },
+  );
+
+  test(
+    'Authentication expiry during conflict recovery clears the old account',
+    () async {
+      var reads = 0;
+      final pets = petsWith((request) async {
+        if (request.method == 'GET') {
+          reads++;
+          return reads == 1
+              ? http.Response(jsonEncode(petResponse()), 200)
+              : http.Response('Unauthorized', 401);
+        }
+        return http.Response(
+          '{"code":"stale_version","message":"Reload your pet"}',
+          409,
+        );
+      });
+      pets.bindUser('alice');
+      await pets.load();
+      expect(await pets.select('koala'), isFalse);
+      expect(pets.signedIn, isFalse);
+      expect(pets.value, isNull);
+    },
+  );
+
+  test('Disposing an in-flight client discards its response', () async {
+    final response = Completer<http.Response>();
+    final client = MockClient((_) => response.future);
+    addTearDown(client.close);
+    var published = false;
+    final pets = PetData(
+      api: PetApi(
+        client: client,
+        baseUrl: 'https://pets.example',
+        accessToken: (_) async => 'token',
+      ),
+      onChanged: (_) => published = true,
+      onCleared: () {},
+    );
+    pets.bindUser('alice');
+    final loading = pets.load();
+    pets.dispose();
+    response.complete(http.Response(jsonEncode(petResponse()), 200));
+    await loading;
+    expect(published, isFalse);
   });
 
   test('Missing configuration fails without making a request', () async {

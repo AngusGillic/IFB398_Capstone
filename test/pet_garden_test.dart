@@ -10,7 +10,7 @@ import 'package:travelly_flutter_ios_style/models/garden_catalogue.dart';
 import 'package:travelly_flutter_ios_style/screens/pet_home_page.dart';
 import 'package:travelly_flutter_ios_style/screens/pet_profile_page.dart';
 
-import 'pet_data_test.dart' show petResponse, petsWith, gardenResponse;
+import 'support/pet_fixtures.dart' show petResponse, petsWith, gardenResponse;
 
 Future<void> openGarden(WidgetTester tester, PetData pets) async {
   await tester.binding.setSurfaceSize(const Size(430, 1100));

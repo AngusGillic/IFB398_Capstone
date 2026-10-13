@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:travelly_flutter_ios_style/screens/pet_selection_page.dart';
 import 'package:travelly_flutter_ios_style/screens/pet_profile_page.dart';
 
-import 'pet_data_test.dart' show petResponse, petsWith;
+import 'support/pet_fixtures.dart' show petResponse, petsWith;
 
 void main() {
   testWidgets(

@@ -84,8 +84,7 @@ Errors return `{"code":"pet_locked","message":"This pet is still locked"}`.
 ## Integration
 
 Step two adds the server implementation and storage under `backend/`.
-Step three adds an API
-service under `lib/services/`, loads state after sign-in and clears it on
+Step three adds an API service under `lib/services/`, loads state after sign-in and clears it on
 sign-out. It publishes confirmed stats to `AppData` and selection to
 `PetController`. Pet selection and profile should listen for state updates.
 Step four connects the garden actions and shows pending/error states. No
@@ -110,7 +109,7 @@ confirmed Pets data from the configured API.
 4. Implement garden purchases and care actions, including inventory, prices,
    effects and cooldowns. Complete.
 5. Verify the complete flow with backend and client tests for unlocks, rewards,
-   retries, concurrent updates and account isolation.
+   retries, concurrent updates and account isolation. Complete locally.
 
 
 ## Flutter client
@@ -152,3 +151,21 @@ avoid treating an old receipt as the current balance or cooldown. Catalogue
 failures disable garden actions and provide a separate reload button.
 
 AWS deployment remains outside the current scope.
+
+
+## Final verification
+
+The local suite covers the full client-to-server JSON flow over loopback HTTP,
+using the production Pets handlers and simulated DynamoDB. It verifies trip
+credits and unlocks, selection, purchases, care, relaunch persistence, separate
+accounts, competing writes and a committed purchase whose response is lost.
+The fixture supplies test identity claims; live Cognito verification and
+external trips-worker wiring are not part of this local suite.
+
+Final regression fixes clear personal data on non-JSON authentication errors,
+block further writes when a conflict refresh fails, and discard responses
+received after the client is disposed. Shared test data is in `test/support/`.
+
+The final run passed 32 Dart/client/UI/integration tests and 15 backend checks.
+The existing external trips worker still needs to invoke the prepared reward
+hook. Deployment remains outside the requested scope.

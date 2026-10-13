@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 
 import '../core/pet_data.dart';
-import '../models/pet_state.dart';
 import '../models/garden_catalogue.dart';
+import '../models/pet_state.dart';
 import '../widgets/pet_data_view.dart';
 import '../models/pet.dart';
 import '../ui/entrance.dart';
@@ -48,6 +48,7 @@ class _PetHomePageState extends State<PetHomePage> {
       !_data.busy &&
       !_data.shopBusy &&
       !_data.needsRetry &&
+      !_data.needsRefresh &&
       _data.shop != null &&
       _data.shopError == null;
 

@@ -93,3 +93,24 @@ Small pot and kennel purchases save ownership; displaying them is step four.
 Selection and profile use the configured Pets API. See `../PETS_BACKEND.md`
 for the Flutter configuration. Garden purchases, care actions, ownership displays and sunlight cooldowns
 are also connected. Deployment remains outside the current scope.
+
+
+## Client integration checks
+
+After installing the test dependencies above, run from the repository root:
+
+```powershell
+flutter pub get
+$env:PETS_TEST_PYTHON = (Resolve-Path backend/.venv/Scripts/python.exe).Path
+flutter test --no-pub test/pet_state_test.dart test/pet_data_test.dart test/pet_pages_test.dart test/pet_garden_test.dart test/pet_integration_test.dart
+```
+
+The integration file starts a temporary loopback server from
+`tests/pets_server.py`, calls the production handlers against simulated
+DynamoDB, and stops the server on completion. Its test-only trip-credit and
+response-loss controls are not included in the Lambda package. No deployed
+AWS services or genuine user credentials are used. Authentication is covered
+by handler checks and the template tests, rather than live Cognito sign-in.
+
+The fixtures under `test/support/` are shared by the client and UI tests. The
+local suite passed 32 Dart tests and 15 backend checks.

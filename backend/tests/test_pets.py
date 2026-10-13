@@ -196,6 +196,37 @@ class PetsTests(unittest.TestCase):
             with self.assertRaises(PetError):
                 self.service.credit_trip('alice', 'bad-trip', saving)
 
+    def test_duplicate_receipt_rolls_back_the_state_write(self):
+        self.service.credit_trip('alice', 'trip-1', 10)
+        body, _ = self.mutation('purchases', 'water')
+        before = self.store.load('alice')
+        changed = copy.deepcopy(before)
+        changed['coins'] -= 5
+        changed['version'] += 1
+        with self.assertRaises(Conflict):
+            self.store.commit('alice', before['version'], changed,
+                              'request:' + body['request_id'], 'another-hash', {})
+        self.assertEqual(self.store.load('alice'), before)
+
+    def test_trip_credit_retries_after_a_competing_update(self):
+        original_commit = self.store.commit
+        competing = True
+
+        def commit(owner, version, state, key, fingerprint, result):
+            nonlocal competing
+            if competing:
+                competing = False
+                self.store.commit = original_commit
+                self.service.credit_trip(owner, 'parallel-trip', 2)
+                self.store.commit = commit
+            return original_commit(owner, version, state, key, fingerprint, result)
+
+        self.store.commit = commit
+        state = self.service.credit_trip('alice', 'trip-1', 1)
+        self.assertEqual(state['co2_saved_kg'], 3)
+        self.assertEqual(state['pet']['coins'], 30)
+        self.assertEqual(self.service.credit_trip('alice', 'trip-1', 1), state)
+
     def test_catalogue_is_authenticated(self):
         result = self.request('alice', 'GET /v1/me/pet/catalogue')
         self.assertEqual(result['statusCode'], 200)

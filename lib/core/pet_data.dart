@@ -2,8 +2,8 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/foundation.dart';
 
 import '../data/user_data.dart';
-import '../models/pet.dart';
 import '../models/garden_catalogue.dart';
+import '../models/pet.dart';
 import '../models/pet_state.dart';
 import '../services/pet_api.dart';
 
@@ -30,6 +30,7 @@ class PetData extends ValueNotifier<PetState?> {
   bool shopBusy = false;
   String? shopError;
   bool _shopRequested = false;
+  bool _needsRefresh = false;
   String? _owner;
   int _session = 0;
   bool busy = false;
@@ -39,6 +40,7 @@ class PetData extends ValueNotifier<PetState?> {
   String? get owner => _owner;
   bool get signedIn => _owner != null;
   bool get needsRetry => _pending != null;
+  bool get needsRefresh => _needsRefresh;
 
   void bindUser(String? owner) {
     if (_owner == owner) return;
@@ -48,6 +50,7 @@ class PetData extends ValueNotifier<PetState?> {
     shopBusy = false;
     shopError = null;
     _receivedAt = null;
+    _needsRefresh = false;
     busy = false;
     error = null;
     _pending = null;
@@ -131,7 +134,7 @@ class PetData extends ValueNotifier<PetState?> {
   }
 
   Future<bool> select(String id) async {
-    if (busy || value == null || needsRetry) return false;
+    if (busy || value == null || needsRetry || needsRefresh) return false;
     if (id == value!.selectedPetId) return true;
     return _save('selection', {'pet_id': id});
   }
@@ -146,7 +149,8 @@ class PetData extends ValueNotifier<PetState?> {
   }
 
   Future<bool> _save(String operation, Map<String, dynamic> fields) {
-    if (busy || value == null || needsRetry) return Future.value(false);
+    if (busy || value == null || needsRetry || needsRefresh)
+      return Future.value(false);
     return _send(operation, {
       ...fields,
       'version': value!.version,
@@ -169,6 +173,7 @@ class PetData extends ValueNotifier<PetState?> {
       _pending = null;
       _publish(state);
       if (wasRetry) {
+        _needsRefresh = true;
         try {
           final latest = await _api.fetch(owner);
           if (session != _session) return false;
@@ -186,10 +191,19 @@ class PetData extends ValueNotifier<PetState?> {
       if (e is PetApiException && e.status != null && e.status! < 500) {
         _pending = null;
         if (e.status == 409) {
+          _needsRefresh = true;
           try {
             final state = await _api.fetch(owner);
             if (session == _session) _publish(state);
-          } catch (_) {}
+          } catch (refreshError) {
+            if (session == _session) {
+              if (refreshError is PetApiException && refreshError.status == 401)
+                bindUser(null);
+              error = _message(refreshError);
+              notifyListeners();
+            }
+            return false;
+          }
         }
       } else if (e is PetApiException && e.code == 'not_configured') {
         _pending = null;
@@ -208,9 +222,16 @@ class PetData extends ValueNotifier<PetState?> {
     }
   }
 
+  @override
+  void dispose() {
+    _session++;
+    super.dispose();
+  }
+
   void _publish(PetState state) {
     if (value != null && state.version < value!.version) return;
     _receivedAt = _clock();
+    _needsRefresh = false;
     _onChanged(state);
     value = state;
   }

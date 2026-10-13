@@ -301,11 +301,11 @@ class AppData extends ValueNotifier<UserData> {
     ),
   );
 
-  /// Fetch the signed-in user's figures. See BACKEND.md.
   PetStats? _savedPet;
   double? _savedPetCo2;
   int _session = 0;
 
+  /// Fetch the signed-in user's figures. See BACKEND.md.
   Future<void> load() async {
     final session = _session;
     final data = await ApiClient.fetchUserData();

@@ -30,7 +30,7 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
   bool get _unlocked => _pet.isUnlockedAt(_savedKg);
 
   void _choose(Pet pet) {
-    if (_data.busy || _data.needsRetry) return;
+    if (_data.busy || _data.needsRetry || _data.needsRefresh) return;
     HapticFeedback.selectionClick();
     setState(() => _focused = pet.id);
   }
@@ -95,7 +95,7 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
                         ? CupertinoIcons.check_mark
                         : CupertinoIcons.lock_fill,
                     loading: _data.busy,
-                    onPressed: _unlocked && !_data.needsRetry ? _confirm : null,
+                    onPressed: _unlocked && !_data.needsRetry && !_data.needsRefresh ? _confirm : null,
                   ),
                 ),
                 const SizedBox(height: LGGap.section),
