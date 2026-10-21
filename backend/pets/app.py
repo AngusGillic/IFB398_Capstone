@@ -30,6 +30,7 @@ def handle_request(event, service):
             return response(200, {'pets': PET_UNLOCKS, 'items': ITEMS, 'actions': ACTIONS})
         operation = {
             'PUT /v1/me/pet/selection': 'selection',
+            'PUT /v1/me/pet/equipment': 'equipment',
             'POST /v1/me/pet/purchases': 'purchases',
             'POST /v1/me/pet/actions': 'actions',
         }.get(route)

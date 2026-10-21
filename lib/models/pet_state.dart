@@ -6,6 +6,7 @@ class PetState {
     required this.adoptedAt,
     required this.stats,
     required this.inventory,
+    required this.equipped,
     required this.co2SavedKg,
     required this.version,
     this.serverTime,
@@ -16,6 +17,7 @@ class PetState {
   final DateTime adoptedAt;
   final PetStats stats;
   final Map<String, int> inventory;
+  final Map<String, String?> equipped;
   final double co2SavedKg;
   final int version;
   final DateTime? serverTime;
@@ -24,6 +26,15 @@ class PetState {
   factory PetState.fromJson(Map<String, dynamic> json) {
     final pet = json['pet'] as Map<String, dynamic>;
     final inventory = json['inventory'] as Map<String, dynamic>;
+    final equipped =
+    (json['equipped'] as Map<String, dynamic>?) ??
+    {
+      'room': 'room1',
+      'rug': 'grassrug',
+      'plant': null,
+      'left': null,
+      'top_right': null,
+    };
     final selectedPetId = json['selected_pet_id'] as String;
     final adoptedAt = DateTime.parse(json['adopted_at'] as String);
 
@@ -44,6 +55,11 @@ class PetState {
       inventory: Map.unmodifiable(
         inventory.map((id, quantity) => MapEntry(id, _wholeNumber(quantity))),
       ),
+      equipped: Map.unmodifiable(
+        equipped.map(
+          (slot, item) => MapEntry(slot, item as String?),
+        ),
+    ),
       co2SavedKg: _number(json['co2_saved_kg']),
       version: _wholeNumber(json['version']),
       serverTime: json['server_time'] == null

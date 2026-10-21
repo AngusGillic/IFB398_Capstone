@@ -16,6 +16,22 @@ class PetProfilePage extends StatelessWidget {
 
   final PetData? data;
 
+  String? _petAsset(String petId) {
+    switch (petId) {
+      case 'puppy':
+        return 'assets/images/frames/dingohappy1.png';
+
+      case 'frill':
+        return 'assets/images/frames/frilliehappy1.png';
+
+      case 'koala':
+        return 'assets/images/frames/koala.png';
+
+      default:
+        return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return PetDataView(
@@ -70,6 +86,10 @@ class PetProfilePage extends StatelessWidget {
                         width: 0.5,
                       ),
                     ),
+                  ),
+                  child: Padding(padding: const EdgeInsets.all(10), child: _petAsset(pet.id) != null
+                    ? Image.asset(_petAsset(pet.id)!, fit: BoxFit.contain)
+                    : null
                   ),
                 ),
                 const SizedBox(height: LGGap.edge),

@@ -39,7 +39,16 @@ flutter:
   
   assets:
     - assets/images/
+    - assets/images/backgrounds/
+    - assets/images/bottom_right_slot/
+    - assets/images/food/
+    - assets/images/frames/
+    - assets/images/left_slot/
+    - assets/images/rugs/
+    - assets/images/top_right_slot/
+    - assets/images/toys/
     - assets/gtfs/
+    - assets/gifs/
 
 # PLACEHOLDER ASSETS:
 # Export real Figma assets into assets/images/ and replace the clearly marked placeholders.

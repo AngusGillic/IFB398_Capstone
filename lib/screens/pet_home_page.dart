@@ -29,6 +29,172 @@ class _PetHomePageState extends State<PetHomePage> {
   late final PetData _data = widget.data ?? PetData.instance;
   Timer? _timer;
   Timer? _refresh;
+  Timer? _happyTimer;
+  bool _showHappyGif = false;
+
+  String? _petAsset(String petId) {
+    switch (petId) {
+      case 'puppy':
+        return 'assets/images/frames/dingohappy1.png';
+
+      case 'frill':
+        return 'assets/images/frames/frilliehappy1.png';
+
+      case 'koala':
+        return 'assets/images/frames/koala.png';
+
+      default:
+        return null;
+    }
+  }
+
+  String? _happyPetAsset(String petId) {
+    switch (petId) {
+      case 'puppy':
+        return 'assets/gifs/dingohappy.gif';
+
+      case 'frill':
+        return 'assets/gifs/frilliehappy.gif';
+
+      case 'koala':
+        return 'assets/gifs/koalahappy.gif';
+
+      default:
+        return null;
+    }
+  }
+
+  String? _roomAsset(String? id) {
+    switch (id) {
+      case 'room1':
+        return 'assets/images/backgrounds/room1.png';
+
+      case 'room2':
+        return 'assets/images/backgrounds/room2.png';
+
+      case 'room3':
+        return 'assets/images/backgrounds/room3.png';
+
+      default:
+        return null;
+    }
+  }
+
+  String? _rugAsset(String? id) {
+    switch (id) {
+      case 'grassrug':
+        return 'assets/images/rugs/grassrug.png';
+
+      case 'flowerrug':
+        return 'assets/images/rugs/flowerrug.png';
+
+      case 'pinkrug':
+        return 'assets/images/rugs/pinkrug.png';
+
+      default:
+        return null;
+    }
+  }
+
+  String? _plantAsset(String? id) {
+    switch (id) {
+      case 'plant1':
+        return 'assets/images/bottom_right_slot/plant1.png';
+
+      case 'plant2':
+        return 'assets/images/bottom_right_slot/plant2.png';
+
+      case 'plant3':
+        return 'assets/images/bottom_right_slot/plant3.png';
+
+      case 'plant4':
+        return 'assets/images/bottom_right_slot/plant4.png';
+
+      case 'plant5':
+        return 'assets/images/bottom_right_slot/plant5.png';
+
+      default:
+        return null;
+    }
+  }
+
+  String? _leftAsset(String? id) {
+    switch (id) {
+      case 'house1':
+        return 'assets/images/left_slot/house1.png';
+
+      case 'house2':
+        return 'assets/images/left_slot/house2.png';
+
+      case 'house3':
+        return 'assets/images/left_slot/house3.png';
+
+      case 'petbed':
+        return 'assets/images/left_slot/petbed.png';
+
+      default:
+        return null;
+    }
+  }
+
+  String? _topRightAsset(String? id) {
+    switch (id) {
+      case 'cattree':
+        return 'assets/images/top_right_slot/cattree.png';
+
+      case 'lamp1':
+        return 'assets/images/top_right_slot/lamp1.png';
+
+      case 'lamp2':
+        return 'assets/images/top_right_slot/lamp2.png';
+
+      default:
+        return null;
+    }
+  }
+
+  bool _isEquippable(String id) {
+    return {
+      'room1',
+      'room2',
+      'room3',
+      'grassrug',
+      'flowerrug',
+      'pinkrug',
+      'plant1',
+      'plant2',
+      'plant3',
+      'plant4',
+      'plant5',
+      'house1',
+      'house2',
+      'house3',
+      'petbed',
+      'cattree',
+      'lamp1',
+      'lamp2',
+    }.contains(id);
+  }
+
+  bool _isEquipped(PetState state, String id) {
+    return state.equipped.values.contains(id);
+  }
+
+  void _playHappyAnimation() {
+    _happyTimer?.cancel();
+
+    setState(() {
+      _showHappyGif = true;
+    });
+
+    _happyTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _showHappyGif = false;
+        });
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -46,6 +212,7 @@ class _PetHomePageState extends State<PetHomePage> {
   void dispose() {
     _timer?.cancel();
     _refresh?.cancel();
+    _happyTimer?.cancel();
     super.dispose();
   }
 
@@ -61,24 +228,37 @@ class _PetHomePageState extends State<PetHomePage> {
     final item = _data.shop?.items[id];
     final quantity = _data.value?.inventory[id] ?? 0;
     final owned = item?.durable == true && quantity > 0;
-    final detail = owned
+    final equippable = _isEquippable(id);
+    final equipped =
+        _data.value != null && _isEquipped(_data.value!, id);
+
+    final detail = equipped
+        ? 'Equipped'
+        : owned
         ? 'Owned'
         : quantity > 0
         ? '$quantity owned'
         : item == null
         ? 'Loading…'
         : '${item.price} coins';
+
     return _Action(
       key: ValueKey('pet-action-$id'),
       icon: icon,
       label: label,
       detail: detail,
-      onTap: _ready && item != null && !owned ? () => _itemOptions(id) : null,
+      onTap:
+          _ready &&
+              item != null &&
+              (!owned || equippable || _data.shop!.actions.contains(id))
+          ? () => _itemOptions(id)
+          : null,
     );
   }
 
   Future<void> _itemOptions(String id) async {
     final owner = _data.owner;
+
     await showCupertinoModalPopup<void>(
       context: context,
       builder: (sheetContext) => ValueListenableBuilder<PetState?>(
@@ -89,8 +269,13 @@ class _PetHomePageState extends State<PetHomePage> {
               state != null && _data.owner == owner && item != null;
           final quantity = state?.inventory[id] ?? 0;
           final owned = item?.durable == true && quantity > 0;
+
           final canBuy =
-              available && _ready && !owned && state.stats.coins >= item.price;
+              available &&
+              _ready &&
+              !owned &&
+              state.stats.coins >= item.price;
+
           final canUse =
               available &&
               _ready &&
@@ -98,12 +283,26 @@ class _PetHomePageState extends State<PetHomePage> {
               _data.shop!.actions.contains(id) &&
               _data.needsCare(id) &&
               _data.cooldownFor(id) == Duration.zero;
+
+          final canEquip =
+              available &&
+              _ready &&
+              quantity > 0 &&
+              _isEquippable(id) &&
+              !_isEquipped(state, id);
+
+          final equipped =
+              state != null &&
+              _isEquippable(id) &&
+              _isEquipped(state, id);
+
           return CupertinoActionSheet(
             title: Text(available ? item.name : 'Garden item'),
             message: Text(
               !available
                   ? 'Close this menu and try again.'
                   : '${item.price} coins · $quantity owned · ${state.stats.coins} coins available'
+                        '${equipped ? '\nCurrently equipped.' : ''}'
                         '${!owned && state.stats.coins < item.price ? '\nNot enough coins yet.' : ''}'
                         '${_data.shop!.actions.contains(id) && !_data.needsCare(id) ? '\nYour pet does not need this care yet.' : ''}',
             ),
@@ -112,15 +311,35 @@ class _PetHomePageState extends State<PetHomePage> {
                 CupertinoActionSheetAction(
                   onPressed: () async {
                     Navigator.of(sheetContext).pop();
-                    if (_data.owner == owner) await _data.care(id);
+
+                    if (_data.owner == owner) {
+                      await _data.care(id);
+                      if (mounted) _playHappyAnimation();
+                    }
                   },
                   child: Text('Use ${item.name}'),
                 ),
+
+              if (canEquip)
+                CupertinoActionSheetAction(
+                  onPressed: () async {
+                    Navigator.of(sheetContext).pop();
+
+                    if (_data.owner == owner) {
+                      await _data.equip(id);
+                    }
+                  },
+                  child: Text('Equip ${item.name}'),
+                ),
+
               if (canBuy)
                 CupertinoActionSheetAction(
                   onPressed: () async {
                     Navigator.of(sheetContext).pop();
-                    if (_data.owner == owner) await _data.buy(id);
+
+                    if (_data.owner == owner) {
+                      await _data.buy(id);
+                    }
                   },
                   child: Text('Buy ${item.name} (${item.price} coins)'),
                 ),
@@ -137,6 +356,7 @@ class _PetHomePageState extends State<PetHomePage> {
 
   Future<void> _openShop() async {
     final owner = _data.owner;
+
     await showCupertinoModalPopup<void>(
       context: context,
       builder: (sheetContext) => ValueListenableBuilder<PetState?>(
@@ -155,9 +375,19 @@ class _PetHomePageState extends State<PetHomePage> {
                 CupertinoActionSheetAction(
                   onPressed: () {
                     Navigator.of(sheetContext).pop();
-                    if (mounted && _data.owner == owner) _itemOptions(item.id);
+
+                    if (mounted && _data.owner == owner) {
+                      _itemOptions(item.id);
+                    }
                   },
-                  child: Text('${item.name} · ${item.price} coins'),
+                  child: Text(
+                    _isEquipped(state, item.id)
+                        ? '${item.name} · Equipped'
+                        : (state.inventory[item.id] ?? 0) > 0 &&
+                              item.durable
+                        ? '${item.name} · Owned'
+                        : '${item.name} · ${item.price} coins',
+                  ),
                 ),
           ],
           cancelButton: CupertinoActionSheetAction(
@@ -183,6 +413,28 @@ class _PetHomePageState extends State<PetHomePage> {
     final cooldown = _data.cooldownFor('sunlight');
     final eco = LGColor.resolve(LGColor.eco, context);
 
+    final room =
+        _roomAsset(state.equipped['room']) ??
+        'assets/images/backgrounds/room1.png';
+
+    final rug =
+        _rugAsset(state.equipped['rug']) ??
+        'assets/images/rugs/grassrug.png';
+
+    final left =
+        _leftAsset(state.equipped['left']) ??
+        ((state.inventory['kennel'] ?? 0) > 0
+            ? 'assets/images/left_slot/house1.png'
+            : null);
+
+    final plant =
+        _plantAsset(state.equipped['plant']) ??
+        ((state.inventory['small_pot'] ?? 0) > 0
+            ? 'assets/images/bottom_right_slot/plant1.png'
+            : null);
+
+    final topRight = _topRightAsset(state.equipped['top_right']);
+
     return AppShell(
       showBottomNav: true,
       selectedIndex: 4,
@@ -201,11 +453,13 @@ class _PetHomePageState extends State<PetHomePage> {
         ),
         children: [
           PetStatus(data: _data),
+
           if (_data.shopBusy)
             const Padding(
               padding: EdgeInsets.only(bottom: LGGap.lg),
               child: CupertinoActivityIndicator(),
             ),
+
           if (_data.shopError != null) ...[
             Text(_data.shopError!, style: LGText.footnote(context)),
             GlassButton(
@@ -214,6 +468,7 @@ class _PetHomePageState extends State<PetHomePage> {
             ),
             const SizedBox(height: LGGap.lg),
           ],
+
           Entrance(
             index: 0,
             child: Row(
@@ -233,6 +488,7 @@ class _PetHomePageState extends State<PetHomePage> {
               ],
             ),
           ),
+
           const SizedBox(height: LGGap.edge),
 
           Entrance(
@@ -241,64 +497,94 @@ class _PetHomePageState extends State<PetHomePage> {
               borderRadius: LGShape.radius(LGRadius.xl),
               child: Container(
                 height: 240,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFFDCEEFF), Color(0xFFE8F6EC)],
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage(room),
+                    fit: BoxFit.cover,
                   ),
                 ),
                 child: Stack(
                   children: [
-                    if ((state.inventory['kennel'] ?? 0) > 0)
+                    if (left != null)
                       Positioned(
-                        key: const ValueKey('garden-kennel'),
-                        left: 28,
-                        top: 34,
-                        child: Icon(
-                          CupertinoIcons.house_fill,
-                          size: 76,
-                          color: LGColor.resolve(LGColor.effort, context),
+                        left: 18,
+                        top: 70,
+                        child: Image.asset(
+                          left,
+                          width: 125,
+                          height: 125,
+                          fit: BoxFit.contain,
                         ),
                       ),
-                    const Positioned(
-                      right: 48,
-                      top: 74,
-                      child: PlaceholderPet(size: 92),
+
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 1,
+                      child: Center(
+                        child: Image.asset(
+                          rug,
+                          width: 160,
+                          height: 90,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
                     ),
-                    if ((state.inventory['small_pot'] ?? 0) > 0)
+
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 30,
+                      child: Center(
+                        child:
+                            _showHappyGif &&
+                                _happyPetAsset(state.selectedPetId) != null
+                            ? Image.asset(
+                                _happyPetAsset(state.selectedPetId)!,
+                                width: 105,
+                                height: 105,
+                                fit: BoxFit.contain,
+                              )
+                            : _petAsset(state.selectedPetId) != null
+                            ? Image.asset(
+                                _petAsset(state.selectedPetId)!,
+                                width: 105,
+                                height: 105,
+                                fit: BoxFit.contain,
+                              )
+                            : const PlaceholderPet(size: 105),
+                      ),
+                    ),
+
+                    if (plant != null)
                       Positioned(
-                        key: const ValueKey('garden-small-pot'),
-                        left: 100,
-                        bottom: 26,
-                        child: Icon(CupertinoIcons.tree, size: 38, color: eco),
+                        right: 18,
+                        bottom: 50,
+                        child: Image.asset(
+                          plant,
+                          width: 110,
+                          height: 110,
+                          fit: BoxFit.contain,
+                        ),
                       ),
-                    Positioned(
-                      left: 18,
-                      bottom: 26,
-                      child: Icon(
-                        CupertinoIcons.leaf_arrow_circlepath,
-                        size: 38,
-                        color: eco,
+
+                    if (topRight != null)
+                      Positioned(
+                        right: 18,
+                        top: 20,
+                        child: Image.asset(
+                          topRight,
+                          width: 110,
+                          height: 110,
+                          fit: BoxFit.contain,
+                        ),
                       ),
-                    ),
-                    Positioned(
-                      right: 14,
-                      bottom: 22,
-                      child: Icon(
-                        CupertinoIcons.leaf_arrow_circlepath,
-                        size: 60,
-                        color: LGColor.resolve(
-                          LGColor.eco,
-                          context,
-                        ).withValues(alpha: 0.75),
-                      ),
-                    ),
                   ],
                 ),
               ),
             ),
           ),
+
           const SizedBox(height: LGGap.edge),
 
           GreyPanel(
@@ -308,6 +594,7 @@ class _PetHomePageState extends State<PetHomePage> {
               children: [
                 Text('Care for your pet', style: LGText.headline(context)),
                 const SizedBox(height: LGGap.md),
+
                 for (final stat in [
                   ('Happiness', state.stats.happiness),
                   ('Energy', state.stats.energy),
@@ -321,6 +608,7 @@ class _PetHomePageState extends State<PetHomePage> {
                   GlassProgress(value: stat.$2),
                   const SizedBox(height: LGGap.md),
                 ],
+
                 Text(
                   'Water restores health and happiness. Fertiliser restores health. Sunlight restores energy. Condition drops gradually, even while you are away.',
                   style: LGText.footnote(context),
@@ -333,7 +621,9 @@ class _PetHomePageState extends State<PetHomePage> {
               ],
             ),
           ),
+
           const SizedBox(height: LGGap.edge),
+
           Entrance(
             index: 2,
             child: GreyPanel(
@@ -362,7 +652,9 @@ class _PetHomePageState extends State<PetHomePage> {
                       ),
                     ],
                   ),
+
                   const SizedBox(height: LGGap.edge),
+
                   GridView.count(
                     crossAxisCount: 3,
                     shrinkWrap: true,
@@ -376,12 +668,19 @@ class _PetHomePageState extends State<PetHomePage> {
                         'Small pot',
                         'small_pot',
                       ),
-                      _itemButton(CupertinoIcons.drop_fill, 'Water', 'water'),
+
+                      _itemButton(
+                        CupertinoIcons.drop_fill,
+                        'Water',
+                        'water',
+                      ),
+
                       _itemButton(
                         CupertinoIcons.sparkles,
                         'Fertiliser',
                         'fertiliser',
                       ),
+
                       _Action(
                         key: const ValueKey('pet-action-sunlight'),
                         icon: CupertinoIcons.sun_max_fill,
@@ -396,14 +695,22 @@ class _PetHomePageState extends State<PetHomePage> {
                                 _data.shop!.actions.contains('sunlight') &&
                                 _data.needsCare('sunlight') &&
                                 cooldown == Duration.zero
-                            ? () => _data.care('sunlight')
+                            ? () async {
+                                await _data.care('sunlight');
+
+                                if (mounted) {
+                                  _playHappyAnimation();
+                                }
+                              }
                             : null,
                       ),
+
                       _itemButton(
                         CupertinoIcons.house_fill,
                         'Kennel',
                         'kennel',
                       ),
+
                       _Action(
                         key: const ValueKey('pet-action-more'),
                         icon: CupertinoIcons.plus,
@@ -466,7 +773,10 @@ class _Action extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: LGText.caption2(context).copyWith(
-                  color: LGColor.resolve(LGColor.secondaryLabel, context),
+                  color: LGColor.resolve(
+                    LGColor.secondaryLabel,
+                    context,
+                  ),
                 ),
               ),
             ],

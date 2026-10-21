@@ -211,7 +211,7 @@ class _NextUp extends StatelessWidget {
       shadows: LGShadow.low(context),
       child: Row(
         children: [
-          _PetArt(size: 46, accent: pet.accent, dimmed: true),
+          _PetArt(petId: pet.id, size: 46, accent: pet.accent, dimmed: true),
           const SizedBox(width: LGGap.edge),
           Expanded(
             child: Column(
@@ -307,7 +307,7 @@ class _Hero extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _PetArt(size: 124, accent: pet.accent, dimmed: !unlocked, locked: !unlocked),
+          _PetArt(petId: pet.id, size: 124, accent: pet.accent, dimmed: !unlocked, locked: !unlocked),
           const SizedBox(height: LGGap.edge),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -386,6 +386,7 @@ class _PetTile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _PetArt(
+                petId: pet.id,
                 size: 50,
                 accent: pet.accent,
                 dimmed: !unlocked,
@@ -422,21 +423,40 @@ class _PetTile extends StatelessWidget {
 /// Artwork slot. Replace the inner box with Image.asset.
 class _PetArt extends StatelessWidget {
   const _PetArt({
+    required this.petId,
     required this.size,
     required this.accent,
     this.dimmed = false,
     this.locked = false,
   });
 
+  final String petId;
   final double size;
   final Color accent;
   final bool dimmed;
   final bool locked;
 
+  String? get assetPath {
+    switch (petId) {
+      case 'puppy':
+        return 'assets/images/frames/dingohappy1.png';
+
+      case 'frill':
+        return 'assets/images/frames/frilliehappy1.png';
+
+      case 'koala':
+        return 'assets/images/frames/koala.png';
+
+      default:
+        return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
     final radius = size > 80 ? LGRadius.lg : LGRadius.sm;
+    final image = assetPath;
 
     return SizedBox(
       width: size,
@@ -454,19 +474,26 @@ class _PetArt extends StatelessWidget {
             padding: EdgeInsets.all(size * 0.11),
             child: Opacity(
               opacity: dimmed ? 0.35 : 1,
-              child: Container(
-                decoration: ShapeDecoration(
-                  color: dark ? const Color(0xFF2C2C2E) : const Color(0xFFFFFFFF),
-                  shape: LGShape.border(
-                    radius - 3,
-                    side: BorderSide(
-                      color: LGColor.resolve(LGColor.separator, context)
-                          .withValues(alpha: 0.35),
-                      width: 0.5,
+              child: image != null
+                  ? Image.asset(
+                      image,
+                      width: size,
+                      height: size,
+                      fit: BoxFit.contain,
+                    )
+                  : Container(
+                      decoration: ShapeDecoration(
+                        color: dark ? const Color(0xFF2C2C2E) : const Color(0xFFFFFFFF),
+                        shape: LGShape.border(
+                          radius - 3,
+                          side: BorderSide(
+                            color: LGColor.resolve(LGColor.separator, context)
+                                .withValues(alpha: 0.35),
+                            width: 0.5,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ),
             ),
           ),
           if (locked)

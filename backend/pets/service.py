@@ -31,6 +31,13 @@ def new_pet(now):
 def new_state(now):
     return {
         'selected_pet_id': 'puppy', 'coins': 0, 'inventory': {},
+        'equipped': {
+            'room': 'room1',
+            'rug': 'grassrug',
+            'plant': None,
+            'left': None,
+            'top_right': None,
+        },
         'co2_saved_kg': 0.0, 'version': 0,
         'pets': {'puppy': new_pet(now)},
     }
@@ -56,6 +63,13 @@ def snapshot(state, now):
     state = progress(state, now)
     pet = state['pets'][state['selected_pet_id']]
     adopted = datetime.fromisoformat(pet['adopted_at'].replace('Z', '+00:00'))
+    equipped = state.get('equipped', {
+        'room': 'room1',
+        'rug': 'grassrug',
+        'plant': None,
+        'left': None,
+        'top_right': None,
+    })
     return {
         'selected_pet_id': state['selected_pet_id'],
         'adopted_at': pet['adopted_at'],
@@ -66,6 +80,7 @@ def snapshot(state, now):
             'days_together': max(0, (now - adopted).days),
         },
         'inventory': copy.deepcopy(state['inventory']),
+        'equipped': copy.deepcopy(equipped),
         'co2_saved_kg': state['co2_saved_kg'], 'version': state['version'],
         'server_time': now.isoformat().replace('+00:00', 'Z'),
         'cooldowns': {
@@ -92,8 +107,8 @@ class PetService:
         return snapshot(self._load(owner, now), now)
 
     def mutate(self, owner, operation, body):
-        field = {'selection': 'pet_id', 'purchases': 'item_id',
-                 'actions': 'action_id'}.get(operation)
+        field = {'selection': 'pet_id', 'equipment': 'item_id',
+                 'purchases': 'item_id', 'actions': 'action_id'}.get(operation)
         if field is None:
             raise PetError('not_found', 'Unknown operation', 404)
         if set(body) != {field, 'version', 'request_id'}:
@@ -138,6 +153,59 @@ class PetService:
                 raise PetError('pet_locked', 'This pet is still locked')
             state['pets'].setdefault(value, new_pet(now))
             state['selected_pet_id'] = value
+            return
+
+        if operation == 'equipment':
+            slots = {
+                # Background
+                'room1': 'room',
+                'room2': 'room',
+                'room3': 'room',
+
+                # Rugs
+                'grassrug': 'rug',
+                'flowerrug': 'rug',
+                'pinkrug': 'rug',
+
+                # Plants
+                'plant1': 'plant',
+                'plant2': 'plant',
+                'plant3': 'plant',
+                'plant4': 'plant',
+                'plant5': 'plant',
+
+                # Left slot
+                'house1': 'left',
+                'house2': 'left',
+                'house3': 'left',
+                'petbed': 'left',
+
+                # Top-right slot
+                'cattree': 'top_right',
+                'lamp1': 'top_right',
+                'lamp2': 'top_right',
+            }
+
+            slot = slots.get(value)
+
+            if slot is None:
+                raise PetError('not_equippable', 'This item cannot be equipped', 400)
+
+            # Free/default items don't need to be purchased.
+            free_items = {'room1', 'grassrug'}
+
+            if value not in free_items and state['inventory'].get(value, 0) < 1:
+                raise PetError('not_owned', 'You do not own this item')
+
+            state.setdefault('equipped', {
+                'room': 'room1',
+                'rug': 'grassrug',
+                'plant': None,
+                'left': None,
+                'top_right': None,
+            })
+
+            state['equipped'][slot] = value
             return
 
         if operation == 'purchases':
