@@ -227,7 +227,7 @@ class _PetHomePageState extends State<PetHomePage> {
                 ),
                 const SizedBox(width: LGGap.md),
                 GlassPill(
-                  label: '${state.stats.coins}',
+                  label : '${state.stats.coins}',
                   icon: CupertinoIcons.money_dollar_circle_fill,
                   color: LGColor.resolve(LGColor.effort, context),
                 ),

@@ -170,7 +170,7 @@ class LifetimeImpact {
 }
 
 class PetStats {
-  const PetStats({
+  PetStats({
     required this.coins,
     required this.happiness,
     required this.energy,
@@ -178,7 +178,7 @@ class PetStats {
     required this.daysTogether,
   });
 
-  final int coins;
+  int coins;
 
   /// All three are 0.0 to 1.0.
   final double happiness;
@@ -284,7 +284,7 @@ class AppData extends ValueNotifier<UserData> {
     ),
     impact: const {},
     lifetime: const LifetimeImpact(co2SavedKg: 0, totalTrips: 0, totalKm: 0),
-    pet: const PetStats(
+    pet: PetStats(
       coins: 0,
       happiness: 0,
       energy: 0,

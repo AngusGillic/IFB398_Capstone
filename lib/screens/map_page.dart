@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
+import 'package:travelly_flutter_ios_style/core/pet_data.dart';
 import 'package:travelly_flutter_ios_style/data/user_data.dart';
+import 'package:travelly_flutter_ios_style/models/pet.dart';
+import 'package:travelly_flutter_ios_style/models/pet_state.dart';
 
 import '../services/geo_service.dart';
 import '../services/maps_config.dart';
@@ -11,6 +14,8 @@ import '../ui/glass.dart';
 import '../ui/glass_widgets.dart';
 import '../widgets/app_scaffold.dart';
 import '../services/api_client.dart';
+import '../services/pet_api.dart';
+import '../models/pet_state.dart';
 
 enum TravelMode { walk, cycle, transit, drive }
 
@@ -853,6 +858,7 @@ class _RoutesSheet extends StatelessWidget {
                               print(
                                 "number of trips this week: ${profile.impact[ImpactRange.week]!.trips}",
                               );
+                              print("coins before trip: ${profile.pet.coins}");
 
                               // Trip activated
                               profile.impact[ImpactRange.week]!.co2SavedKg =
@@ -864,12 +870,15 @@ class _RoutesSheet extends StatelessWidget {
                                     double.parse(
                                       distTraveled.toStringAsPrecision(1),
                                     );
+                                // pet.co2SavedKg = pet.co2SavedKg + double.parse(co2Saved.toStringAsPrecision(1))
                               } else {
                                 profile.impact[ImpactRange.week]!.greenKm =
                                     profile.impact[ImpactRange.week]!.drivenKm +
                                     double.parse(
                                       distTraveled.toStringAsPrecision(1),
                                     );
+
+                                profile.pet.coins += distTraveled.round();
                               }
                               profile.impact[ImpactRange.week]!.trips += 1;
 
@@ -884,7 +893,7 @@ class _RoutesSheet extends StatelessWidget {
                               print(
                                 "week drivenKm: ${profile.impact[ImpactRange.week]!.drivenKm}",
                               );
-
+                              print("coins after trip: ${profile.pet.coins}");
                               onReset();
                             },
                           ),

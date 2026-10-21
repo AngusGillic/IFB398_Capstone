@@ -2,6 +2,9 @@ import 'package:amplify_api/amplify_api.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert'; 
+import 'package:travelly_flutter_ios_style/core/user_data_session.dart';
 import 'package:travelly_flutter_ios_style/models/ModelProvider.dart';
 
 import '../data/user_data.dart';
@@ -21,8 +24,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<EcoGroup> _arrayTest = [];
-
   void _open(BuildContext context, Widget page) {
     Navigator.of(context).push(CupertinoPageRoute(builder: (_) => page));
   }
@@ -33,38 +34,10 @@ class _HomePageState extends State<HomePage> {
     ).pushReplacement(MaterialPageRoute(builder: (_) => page));
   }
 
-  // void initState() {
-  //   super.initState();
-  //   _spawnDataDynamo();
-  // }
-
-  // // This function is for debugging only 
-  // Future<void> _spawnDataDynamo() async {
-  //   try {
-  //     final request = ModelQueries.list(EcoGroup.classType);
-  //     final response = await Amplify.API.query(request: request).response;
-
-  //     final result = response.data?.items;
-  //     if (response.hasErrors) {
-  //       safePrint("errors: ${response.errors}");
-  //       return;
-  //     }
-
-  //     setState(() {
-  //       // safePrint(result);
-  //       _arrayTest = result!.whereType<EcoGroup>().toList();
-  //     });
-
-  //     safePrint("Loading data from DynamoDB...");
-
-  //     for (EcoGroup item in _arrayTest) {
-  //       safePrint(item);
-  //     }
-
-  //   } on ApiException catch(e) {
-  //     safePrint("Query Failed: $e");
-  //   }
-  // }
+  void initState() {
+    super.initState();
+    // _spawnDataDynamo();
+  }
 
   String get _greeting {
     final hour = DateTime.now().hour;
@@ -77,14 +50,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final secondary = LGColor.resolve(LGColor.secondaryLabel, context);
     final data = AppData.current;
-    // final data2 = AppData.instance.update(data);
-    // final data = AppData.instance.load();
-    // final data3 = AppData.current;
-
-    // safePrint(data2);
-    // safePrint(data.toString());
     
-
     return AppShell(
       showBottomNav: true,
       selectedIndex: 2,

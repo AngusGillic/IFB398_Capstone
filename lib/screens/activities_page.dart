@@ -8,6 +8,9 @@ import '../ui/glass_widgets.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/card_panels.dart';
 import '../widgets/pet_data_view.dart';
+import '../core/user_data_session.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ActivitiesPage extends StatefulWidget {
   const ActivitiesPage({super.key, this.data});
@@ -27,6 +30,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
   @override
   void initState() {
     super.initState();
+    _spawnDataDynamo();
     _data.addListener(_changed);
     _historyOwner = _data.owner;
     _historyVersion = _data.value?.version;
@@ -50,6 +54,26 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
   }
 
   bool get _ready => !_data.busy && !_data.needsRetry && !_data.needsRefresh;
+
+  Future<List<PetTrip>> _spawnDataDynamo() async {
+    final userID = UserDataSession.boundUserId;
+    List<PetTrip> trips = [];
+    try {
+      final apiURL =
+          "https://9057i6cd5c.execute-api.ap-southeast-2.amazonaws.com/dev/trips";
+      final url = Uri.parse('$apiURL?userId=$userID');
+      final response = await http.get(url);
+      // Map<String, dynamic> data = jsonDecode(response.body);
+      // data = jsonDecode(response.body) as Map<String, dynamic>;
+      final Map<String, dynamic> resultDecoded = jsonDecode(response.body);
+      trips = resultDecoded.values.map((item) {
+        return PetTrip.fromRow(item as Map<String, dynamic>);
+      }).toList();
+    } catch (e) {
+      print("Query Failed: $e");
+    }
+    return trips;
+  }
 
   Future<void> _recordTrip() async {
     final owner = _data.owner;
