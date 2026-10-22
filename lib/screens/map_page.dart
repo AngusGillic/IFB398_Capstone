@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
+import 'package:travelly_flutter_ios_style/core/pet_data.dart';
 import 'package:travelly_flutter_ios_style/data/user_data.dart';
+import 'package:travelly_flutter_ios_style/models/pet.dart';
+import 'package:travelly_flutter_ios_style/models/pet_state.dart';
 
 import '../services/geo_service.dart';
 import '../services/maps_config.dart';
@@ -11,6 +14,11 @@ import '../ui/glass.dart';
 import '../ui/glass_widgets.dart';
 import '../widgets/app_scaffold.dart';
 import '../services/api_client.dart';
+import '../services/pet_api.dart';
+import '../models/pet_state.dart';
+import '../data/user_db.dart';
+import '../core/user_data_session.dart';
+import '../core/pet_data.dart';
 
 enum TravelMode { walk, cycle, transit, drive }
 
@@ -829,62 +837,114 @@ class _RoutesSheet extends StatelessWidget {
                           CupertinoButton.filled(
                             sizeStyle: CupertinoButtonSize.small,
                             child: Text("Start"),
-                            onPressed: () {
-                              print("Trip completed");
+                            onPressed: () async {
                               double distTraveled = km;
-                              double co2Saved = option.saving;
+                              double co2Saved = double.parse(
+                                option.saving.toStringAsPrecision(1),
+                              );
                               print("trip distTraveled : ${distTraveled}");
                               print("trip type: ${option.mode.label}");
                               print("trip co2Saved: ${co2Saved}");
 
-                              UserData profile = AppData.current;
+                              final _petData = PetData.instance;
+                              bool petSaved = false;
 
-                              // BEFORE THE TRIPS (FOR DEBUGGING AND TRACKING)
-                              print("Before the trip:");
-                              print(
-                                "week co2savedkg: ${profile.impact[ImpactRange.week]!.co2SavedKg}",
-                              );
-                              print(
-                                "week greenKm: ${profile.impact[ImpactRange.week]!.greenKm}",
-                              );
-                              print(
-                                "week drivenKm: ${profile.impact[ImpactRange.week]!.drivenKm}",
-                              );
-                              print(
-                                "number of trips this week: ${profile.impact[ImpactRange.week]!.trips}",
-                              );
+                              // bool _petReady =
+                              //     !_petData.busy &&
+                              //     !_petData.needsRetry &&
+                              //     !_petData.needsRefresh;
 
-                              // Trip activated
-                              profile.impact[ImpactRange.week]!.co2SavedKg =
-                                  profile.impact[ImpactRange.week]!.co2SavedKg +
-                                  double.parse(co2Saved.toStringAsPrecision(1));
-                              if (option.mode.label != "Drive") {
-                                profile.impact[ImpactRange.week]!.greenKm =
-                                    profile.impact[ImpactRange.week]!.greenKm +
-                                    double.parse(
-                                      distTraveled.toStringAsPrecision(1),
+                              try {
+                                // A user must be bound before PetData can load.
+                                if (_petData.owner == null) {
+                                  debugPrint(
+                                    'Trip save failed: no pet owner is bound.',
+                                  );
+                                  return;
+                                }
+
+                                // Resolve any previously pending save first.
+                                if (_petData.needsRetry) {
+                                  final retried = await _petData.retry();
+
+                                  if (!retried || _petData.needsRetry) {
+                                    debugPrint(
+                                      'Trip save failed: pending save needs retry.',
                                     );
-                              } else {
-                                profile.impact[ImpactRange.week]!.greenKm =
-                                    profile.impact[ImpactRange.week]!.drivenKm +
-                                    double.parse(
-                                      distTraveled.toStringAsPrecision(1),
-                                    );
+                                    return;
+                                  }
+                                }
+
+                                // Load the pet state if it has not been initialized.
+                                if (_petData.value == null ||
+                                    _petData.needsRefresh) {
+                                  await _petData.load();
+                                }
+
+                                // Verify the state is available before recording the trip.
+                                if (_petData.value == null ||
+                                    _petData.busy ||
+                                    _petData.needsRetry ||
+                                    _petData.needsRefresh) {
+                                  debugPrint(
+                                    'Trip save failed: PetData is not ready. '
+                                    'value=${_petData.value != null}, '
+                                    'busy=${_petData.busy}, '
+                                    'needsRetry=${_petData.needsRetry}, '
+                                    'needsRefresh=${_petData.needsRefresh}, '
+                                    'error=${_petData.error}',
+                                  );
+                                  return;
+                                }
+
+                                if (!_petData.local) {
+                                  debugPrint(
+                                    'Trip save failed: PetData is not local.',
+                                  );
+                                  return;
+                                }
+
+                                print("Mode for PetData: ${option.mode.label}");
+                                print("co2Saved for PetData: ${co2Saved}");
+
+                                debugPrint('Trip mode: "${option.mode.label}"');
+                                debugPrint('CO2 saved: $co2Saved');
+                                debugPrint(
+                                  'CO2 is finite: ${co2Saved.isFinite}',
+                                );
+
+                                petSaved = await _petData.recordTrip(
+                                  option.mode.label,
+                                  co2Saved,
+                                );
+
+                                debugPrint('Pet trip saved: $petSaved');
+
+                                if (!petSaved) {
+                                  debugPrint(
+                                    'PetData rejected the trip: ${_petData.error}',
+                                  );
+                                  return;
+                                }
+                              } catch (error, stackTrace) {
+                                debugPrint('Pet trip save error: $error');
+                                debugPrintStack(stackTrace: stackTrace);
+                                return;
                               }
-                              profile.impact[ImpactRange.week]!.trips += 1;
 
-                              // AFTER THE TRIPS (FOR DEBUGGING AND TRACKING)
-                              print("After the trip");
-                              print(
-                                "week co2savedkg: ${profile.impact[ImpactRange.week]!.co2SavedKg}",
-                              );
-                              print(
-                                "week greenKm: ${profile.impact[ImpactRange.week]!.greenKm}",
-                              );
-                              print(
-                                "week drivenKm: ${profile.impact[ImpactRange.week]!.drivenKm}",
+                              await UserDatabase.instance.saveRecordedTrip(
+                                userId: UserDataSession.boundUserId,
+                                transportMode: option.mode.label,
+                                co2SavedKg: co2Saved,
+                                distanceKm: distTraveled,
+                                durationMinutes: option.duration.inMinutes,
+                                coinsEarned: (co2Saved * 10).floor(),
+                                tripDate: DateTime.now().toLocal(),
                               );
 
+                              await AppData.instance.load();
+
+                              print("Trip was ADDED and COMPLETED");
                               onReset();
                             },
                           ),

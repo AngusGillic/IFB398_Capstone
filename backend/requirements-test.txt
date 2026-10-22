@@ -1,0 +1,4 @@
+boto3>=1.35,<2
+moto[dynamodb]>=5.0,<6
+PyYAML>=6.0,<7
+aws-sam-translator>=1.115,<2

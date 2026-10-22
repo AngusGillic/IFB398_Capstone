@@ -1,4 +1,3 @@
-import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/foundation.dart';
 import '../services/api_client.dart';
 
@@ -25,16 +24,16 @@ class LocalProfile {
   // final DateTime memberSince;
 
   LocalProfile({
-    required this.firstName,
+    // required this.firstName,
     required this.fullName,
     required this.email,
-    required this.memberSince,
+    // required this.memberSince,
   });
 
-  String firstName;
+  // String firstName;
   String fullName;
   String email;
-  DateTime memberSince;
+  // DateTime memberSince;
 
   String get initials {
     final parts = fullName.trim().split(RegExp(r'\s+'));
@@ -171,7 +170,7 @@ class LifetimeImpact {
 }
 
 class PetStats {
-  const PetStats({
+  PetStats({
     required this.coins,
     required this.happiness,
     required this.energy,
@@ -179,7 +178,7 @@ class PetStats {
     required this.daysTogether,
   });
 
-  final int coins;
+  int coins;
 
   /// All three are 0.0 to 1.0.
   final double happiness;
@@ -250,6 +249,15 @@ class UserData {
       impact[range] ?? ImpactSeries.empty;
 
   ImpactSeries get week => seriesFor(ImpactRange.week);
+
+  UserData withPet(PetStats stats, double savedKg) => UserData(
+    profile: profile,
+    impact: impact,
+    lifetime: LifetimeImpact(
+      co2SavedKg: savedKg, totalTrips: lifetime.totalTrips, totalKm: lifetime.totalKm,
+    ),
+    pet: stats, suggestions: suggestions, challenge: challenge,
+  );
 }
 
 /// Start with everything at zero:
@@ -269,14 +277,14 @@ class AppData extends ValueNotifier<UserData> {
   /// Everything at zero, for first launch and while loading.
   static final UserData empty = UserData(
     profile: LocalProfile(
-      firstName: '',
+      // firstName: '',
       fullName: '',
       email: '',
-      memberSince: DateTime.now(),
+      // memberSince: DateTime.now(),
     ),
     impact: const {},
     lifetime: const LifetimeImpact(co2SavedKg: 0, totalTrips: 0, totalKm: 0),
-    pet: const PetStats(
+    pet: PetStats(
       coins: 0,
       happiness: 0,
       energy: 0,
@@ -293,11 +301,29 @@ class AppData extends ValueNotifier<UserData> {
     ),
   );
 
+  PetStats? _savedPet;
+  double? _savedPetCo2;
+  int _session = 0;
+
   /// Fetch the signed-in user's figures. See BACKEND.md.
   Future<void> load() async {
-    safePrint("Here comes the ApiClient data...");
-    value = await ApiClient.fetchUserData();
-    // instance.update(value);
+    final session = _session;
+    final data = await ApiClient.fetchUserData();
+    if (session != _session) return;
+    value = _savedPet == null ? data : data.withPet(_savedPet!, _savedPetCo2!);
+  }
+
+  void setPet(PetStats stats, double savedKg) {
+    _savedPet = stats;
+    _savedPetCo2 = savedKg;
+    value = value.withPet(stats, savedKg);
+  }
+
+  void reset() {
+    _session++;
+    _savedPet = null;
+    _savedPetCo2 = null;
+    value = empty;
   }
 
   void update(UserData data) => value = data;

@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
-import '../data/user_data.dart';
+import '../core/pet_data.dart';
+import '../widgets/pet_data_view.dart';
+import '../widgets/pet_avatar.dart';
 import '../models/pet.dart';
 import '../ui/entrance.dart';
 import '../ui/glass.dart';
@@ -10,34 +12,48 @@ import '../widgets/app_scaffold.dart';
 import 'pet_home_page.dart';
 
 class PetSelectionPage extends StatefulWidget {
-  const PetSelectionPage({super.key});
+  const PetSelectionPage({super.key, this.data});
+
+  final PetData? data;
 
   @override
   State<PetSelectionPage> createState() => _PetSelectionPageState();
 }
 
 class _PetSelectionPageState extends State<PetSelectionPage> {
-  double get _savedKg => AppData.current.lifetime.co2SavedKg;
+  PetData get _data => widget.data ?? PetData.instance;
+  double get _savedKg => _data.value?.co2SavedKg ?? 0;
 
-  late String _focused = PetController.instance.value;
+  String? _focusedOwner;
+  late String _focused = _data.value?.selectedPetId ?? PetCatalogue.all.first.id;
 
   Pet get _pet => PetCatalogue.byId(_focused);
   bool get _unlocked => _pet.isUnlockedAt(_savedKg);
 
   void _choose(Pet pet) {
+    if (_data.busy || _data.needsRetry || _data.needsRefresh) return;
     HapticFeedback.selectionClick();
     setState(() => _focused = pet.id);
   }
 
-  void _confirm() {
-    PetController.instance.select(_focused);
+  Future<void> _confirm() async {
+    if (!await _data.select(_focused) || !mounted) return;
     Navigator.of(context).pushReplacement(
-      CupertinoPageRoute(builder: (_) => const PetHomePage()),
+      CupertinoPageRoute(builder: (_) => PetHomePage(data: widget.data)),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PetDataView(
+    data: widget.data,
+    builder: (context, state) => _build(context),
+  );
+
+  Widget _build(BuildContext context) {
+    if (_focusedOwner != _data.owner) {
+      _focusedOwner = _data.owner;
+      _focused = _data.value!.selectedPetId;
+    }
     final unlocked = PetCatalogue.all.where((p) => p.isUnlockedAt(_savedKg)).toList();
     final locked = PetCatalogue.all.where((p) => !p.isUnlockedAt(_savedKg)).toList();
     final next = locked.isEmpty ? null : locked.first;
@@ -67,18 +83,20 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
                 MediaQuery.paddingOf(context).bottom + AppShell.navHeight + LGGap.section,
               ),
               children: [
+                PetStatus(data: _data),
                 Entrance(
                   index: ++row,
                   child: GlassButton(
                     label: _unlocked
-                        ? (_pet.id == PetController.instance.value
+                        ? (_pet.id == _data.value!.selectedPetId
                             ? 'Keep ${_pet.name}'
                             : 'Raise ${_pet.name}')
                         : '${_pet.name} is still out there',
                     icon: _unlocked
                         ? CupertinoIcons.check_mark
                         : CupertinoIcons.lock_fill,
-                    onPressed: _unlocked ? _confirm : null,
+                    loading: _data.busy,
+                    onPressed: _unlocked && !_data.needsRetry && !_data.needsRefresh ? _confirm : null,
                   ),
                 ),
                 const SizedBox(height: LGGap.section),
@@ -194,7 +212,7 @@ class _NextUp extends StatelessWidget {
       shadows: LGShadow.low(context),
       child: Row(
         children: [
-          _PetArt(size: 46, accent: pet.accent, dimmed: true),
+          _PetArt(pet: pet, size: 46, dimmed: true),
           const SizedBox(width: LGGap.edge),
           Expanded(
             child: Column(
@@ -290,7 +308,7 @@ class _Hero extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _PetArt(size: 124, accent: pet.accent, dimmed: !unlocked, locked: !unlocked),
+          _PetArt(pet: pet, size: 124, dimmed: !unlocked, locked: !unlocked),
           const SizedBox(height: LGGap.edge),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -370,7 +388,7 @@ class _PetTile extends StatelessWidget {
             children: [
               _PetArt(
                 size: 50,
-                accent: pet.accent,
+                pet: pet,
                 dimmed: !unlocked,
                 locked: !unlocked,
               ),
@@ -402,64 +420,25 @@ class _PetTile extends StatelessWidget {
   }
 }
 
-/// Artwork slot. Replace the inner box with Image.asset.
 class _PetArt extends StatelessWidget {
-  const _PetArt({
-    required this.size,
-    required this.accent,
-    this.dimmed = false,
-    this.locked = false,
-  });
+  const _PetArt({required this.pet, required this.size, this.dimmed = false, this.locked = false});
 
+  final Pet pet;
   final double size;
-  final Color accent;
   final bool dimmed;
   final bool locked;
 
   @override
-  Widget build(BuildContext context) {
-    final dark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
-    final radius = size > 80 ? LGRadius.lg : LGRadius.sm;
-
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            decoration: ShapeDecoration(
-              color: accent.withValues(alpha: dimmed ? 0.06 : 0.14),
-              shape: LGShape.border(radius),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.all(size * 0.11),
-            child: Opacity(
-              opacity: dimmed ? 0.35 : 1,
-              child: Container(
-                decoration: ShapeDecoration(
-                  color: dark ? const Color(0xFF2C2C2E) : const Color(0xFFFFFFFF),
-                  shape: LGShape.border(
-                    radius - 3,
-                    side: BorderSide(
-                      color: LGColor.resolve(LGColor.separator, context)
-                          .withValues(alpha: 0.35),
-                      width: 0.5,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          if (locked)
-            Icon(
-              CupertinoIcons.lock_fill,
-              size: size * 0.24,
-              color: LGColor.resolve(LGColor.secondaryLabel, context),
-            ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => SizedBox(
+    width: size,
+    height: size,
+    child: Stack(
+      alignment: Alignment.center,
+      children: [
+        Opacity(opacity: dimmed ? 0.35 : 1, child: PetAvatar(pet: pet, size: size)),
+        if (locked) Icon(CupertinoIcons.lock_fill, size: size * 0.24,
+          color: LGColor.resolve(LGColor.secondaryLabel, context)),
+      ],
+    ),
+  );
 }

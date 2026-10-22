@@ -38,6 +38,8 @@ class SettingsPage extends StatelessWidget {
       safePrint('Is user still signed in: ${session.isSignedIn}');
       
       if (result is CognitoCompleteSignOut) {
+        await UserDataSession.onSignedOut();
+        if (!context.mounted) return;
         safePrint('Sign out completed');
         Navigator.of(context).popUntil((r) => r.isFirst);
       }

@@ -2,6 +2,10 @@ import 'package:amplify_api/amplify_api.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert'; 
+import 'package:travelly_flutter_ios_style/core/user_data_session.dart';
+import 'package:travelly_flutter_ios_style/data/user_db.dart';
 import 'package:travelly_flutter_ios_style/models/ModelProvider.dart';
 
 import '../data/user_data.dart';
@@ -12,6 +16,7 @@ import '../widgets/app_scaffold.dart';
 import '../widgets/card_panels.dart';
 import '../widgets/mock_painters.dart';
 import 'impact_page.dart';
+import '../services/api_client.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -21,11 +26,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<EcoGroup> _arrayTest = [];
-
   void _open(BuildContext context, Widget page) {
     Navigator.of(context).push(CupertinoPageRoute(builder: (_) => page));
   }
+  UserData? _loadedData;
 
   void _replace(BuildContext context, Widget page) {
     Navigator.of(
@@ -33,38 +37,25 @@ class _HomePageState extends State<HomePage> {
     ).pushReplacement(MaterialPageRoute(builder: (_) => page));
   }
 
-  // void initState() {
-  //   super.initState();
-  //   _spawnDataDynamo();
-  // }
+  Future<void> _loadHomeData() async {
+  try {
+    final result = await ApiClient.fetchUserData();
 
-  // // This function is for debugging only 
-  // Future<void> _spawnDataDynamo() async {
-  //   try {
-  //     final request = ModelQueries.list(EcoGroup.classType);
-  //     final response = await Amplify.API.query(request: request).response;
+    if (!mounted) return;
 
-  //     final result = response.data?.items;
-  //     if (response.hasErrors) {
-  //       safePrint("errors: ${response.errors}");
-  //       return;
-  //     }
+    setState(() {
+      _loadedData = result;
+    });
+  } catch (error, stackTrace) {
+    debugPrint('Failed to load homepage data: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
+}
 
-  //     setState(() {
-  //       // safePrint(result);
-  //       _arrayTest = result!.whereType<EcoGroup>().toList();
-  //     });
-
-  //     safePrint("Loading data from DynamoDB...");
-
-  //     for (EcoGroup item in _arrayTest) {
-  //       safePrint(item);
-  //     }
-
-  //   } on ApiException catch(e) {
-  //     safePrint("Query Failed: $e");
-  //   }
-  // }
+  void initState() {
+    _loadHomeData();
+    super.initState();
+  }
 
   String get _greeting {
     final hour = DateTime.now().hour;
@@ -76,15 +67,9 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final secondary = LGColor.resolve(LGColor.secondaryLabel, context);
-    final data = AppData.current;
-    // final data2 = AppData.instance.update(data);
-    // final data = AppData.instance.load();
-    // final data3 = AppData.current;
-
-    // safePrint(data2);
-    // safePrint(data.toString());
+    // final data = AppData.current;
+    final data = _loadedData ?? AppData.current;
     
-
     return AppShell(
       showBottomNav: true,
       selectedIndex: 2,
@@ -105,7 +90,7 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('$_greeting, ${data.profile.firstName}', style: LGText.largeTitle(context)),
+                    Text('$_greeting, ${data.profile.fullName}', style: LGText.largeTitle(context)),
                     const SizedBox(height: LGGap.xxs),
                     Text(
                       "Let's get green",

@@ -407,7 +407,7 @@ class ImpactBar extends StatelessWidget {
                     child: Stack(
                       children: [
                         Positioned.fill(
-                          child: ColoredBox(color: LGColor.resolve(LGColor.fill, context)),
+                          child: ColoredBox(color: LGColor.resolve(LGColor.eco, context)),
                         ),
                         TweenAnimationBuilder<double>(
                           tween: Tween(
