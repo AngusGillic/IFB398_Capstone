@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
-import 'package:travelly_flutter_ios_style/data/user2.dart';
+import 'package:travelly_flutter_ios_style/data/user_db.dart';
 
 import '../data/user_data.dart';
 import '../core/user_data_session.dart';
@@ -12,8 +12,8 @@ import '../services/username_mapper.dart';
 
 class ApiClient {
   // String userId
-  static const _base2 =
-      "https://9057i6cd5c.execute-api.ap-southeast-2.amazonaws.com/dev/trips";
+  // static const _base2 =
+  //     "yes";
 
   static Future<UserData> fetchUserData({String? token}) async {
     safePrint("1. Fetching data...");
@@ -23,9 +23,9 @@ class ApiClient {
 
     safePrint("2. Current logged in user: $userId");
 
-    final response2 = await http.get(Uri.parse('$_base2?userId=$userId'));
+    // final response2 = await http.get(Uri.parse('$_base2?userId=$userId'));
 
-    final decoded = jsonDecode(response2.body);
+    // final decoded = jsonDecode(response2.body);
     // safePrint("Decode type: ${decoded.runtimeType}");
     // safePrint("Decoded data: $decoded");
 
@@ -144,6 +144,7 @@ class ApiClient {
     final UserDatabase _dbService = UserDatabase.instance;
     final String? userID = UserDataSession.boundUserId;
     final result = await _dbService.fetchUserData(userId: userID);
+    
     print(result);
     // return _parse(userMap);
     return _parse(result);

@@ -13,7 +13,7 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import '../services/username_mapper.dart';
 import '../core/user_data_session.dart';
-import '../data/user2.dart';
+import '../data/user_db.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

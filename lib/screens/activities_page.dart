@@ -11,7 +11,9 @@ import '../widgets/pet_data_view.dart';
 import '../core/user_data_session.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../data/user2.dart';
+import '../data/user_db.dart';
+import 'package:amplify_flutter/amplify_flutter.dart';
+import '../data/user_data.dart';
 
 class ActivitiesPage extends StatefulWidget {
   const ActivitiesPage({super.key, this.data});
@@ -94,11 +96,34 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
             CupertinoActionSheetAction(
               onPressed: () async {
                 Navigator.of(sheetContext).pop();
+
+                // String tripID = UUID.getUUID(); 
+
                 if (_data.owner == owner && _ready)
                   await _data.recordTrip(trip.$1, trip.$2);
+
+                try {
+                  await UserDatabase.instance.saveRecordedTrip(
+                    userId: UserDataSession.boundUserId, 
+                    // tripId: tripID, 
+                    transportMode: trip.$1, 
+                    co2SavedKg: trip.$2, 
+                    distanceKm: 0.8,
+                    durationMinutes: 3,
+                    coinsEarned: (trip.$2 * 10).floor(), 
+                    tripDate: DateTime.now().toLocal()
+                  );
+
+                  await AppData.instance.load();
+
+
+                  print("Trip was added");
+                } catch (error) {
+                  print("SQLFLITE error: ${error.toString()}");
+                }
               },
               child: Text(
-                '${trip.$1} · ${trip.$2} kg CO₂ · ${(trip.$2 * 10).floor()} coins',
+                'Mode:${trip.$1} · ${trip.$2} kg CO₂ · ${(trip.$2 * 10).floor()} coins',
               ),
             ),
         ],

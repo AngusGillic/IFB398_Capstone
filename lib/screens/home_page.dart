@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert'; 
 import 'package:travelly_flutter_ios_style/core/user_data_session.dart';
+import 'package:travelly_flutter_ios_style/data/user_db.dart';
 import 'package:travelly_flutter_ios_style/models/ModelProvider.dart';
 
 import '../data/user_data.dart';
@@ -15,6 +16,7 @@ import '../widgets/app_scaffold.dart';
 import '../widgets/card_panels.dart';
 import '../widgets/mock_painters.dart';
 import 'impact_page.dart';
+import '../services/api_client.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -27,6 +29,7 @@ class _HomePageState extends State<HomePage> {
   void _open(BuildContext context, Widget page) {
     Navigator.of(context).push(CupertinoPageRoute(builder: (_) => page));
   }
+  UserData? _loadedData;
 
   void _replace(BuildContext context, Widget page) {
     Navigator.of(
@@ -34,7 +37,23 @@ class _HomePageState extends State<HomePage> {
     ).pushReplacement(MaterialPageRoute(builder: (_) => page));
   }
 
+  Future<void> _loadHomeData() async {
+  try {
+    final result = await ApiClient.fetchUserData();
+
+    if (!mounted) return;
+
+    setState(() {
+      _loadedData = result;
+    });
+  } catch (error, stackTrace) {
+    debugPrint('Failed to load homepage data: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
+}
+
   void initState() {
+    _loadHomeData();
     super.initState();
   }
 
@@ -48,7 +67,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final secondary = LGColor.resolve(LGColor.secondaryLabel, context);
-    final data = AppData.current;
+    // final data = AppData.current;
+    final data = _loadedData ?? AppData.current;
     
     return AppShell(
       showBottomNav: true,
