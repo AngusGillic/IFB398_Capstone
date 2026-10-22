@@ -58,26 +58,6 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
 
   bool get _ready => !_data.busy && !_data.needsRetry && !_data.needsRefresh;
 
-  // Future<List<PetTrip>> _spawnDataDynamo() async {
-  //   final userID = UserDataSession.boundUserId;
-  //   List<PetTrip> trips = [];
-  //   try {
-  //     final apiURL =
-  //         "https://9057i6cd5c.execute-api.ap-southeast-2.amazonaws.com/dev/trips";
-  //     final url = Uri.parse('$apiURL?userId=$userID');
-  //     final response = await http.get(url);
-  //     // Map<String, dynamic> data = jsonDecode(response.body);
-  //     // data = jsonDecode(response.body) as Map<String, dynamic>;
-  //     final Map<String, dynamic> resultDecoded = jsonDecode(response.body);
-  //     trips = resultDecoded.values.map((item) {
-  //       return PetTrip.fromRow(item as Map<String, dynamic>);
-  //     }).toList();
-  //   } catch (e) {
-  //     print("Query Failed: $e");
-  //   }
-  //   return trips;
-  // }
-
   Future<void> _recordTrip() async {
     final owner = _data.owner;
     await showCupertinoModalPopup<void>(
@@ -91,13 +71,12 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
           for (final trip in [
             ('Walking', 0.5),
             ('Cycling', 1.0),
-            ('Public transport', 2.0),
+            ('Bus', 2.0),
+            ('Transit', 2.0)
           ])
             CupertinoActionSheetAction(
               onPressed: () async {
                 Navigator.of(sheetContext).pop();
-
-                // String tripID = UUID.getUUID(); 
 
                 if (_data.owner == owner && _ready)
                   await _data.recordTrip(trip.$1, trip.$2);
@@ -105,7 +84,6 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                 try {
                   await UserDatabase.instance.saveRecordedTrip(
                     userId: UserDataSession.boundUserId, 
-                    // tripId: tripID, 
                     transportMode: trip.$1, 
                     co2SavedKg: trip.$2, 
                     distanceKm: 0.8,

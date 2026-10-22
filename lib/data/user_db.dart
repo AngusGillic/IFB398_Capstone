@@ -496,7 +496,6 @@ class UserDatabase {
             }
           : null;
 
-      // final Map<String, dynamic> userMap = {
       final Map<String, dynamic> userMap = {
         'profile': {
           // 'first_name': profile['first_name'] ?? '',

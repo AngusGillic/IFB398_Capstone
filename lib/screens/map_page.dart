@@ -18,6 +18,7 @@ import '../services/pet_api.dart';
 import '../models/pet_state.dart';
 import '../data/user_db.dart';
 import '../core/user_data_session.dart';
+import '../core/pet_data.dart';
 
 enum TravelMode { walk, cycle, transit, drive }
 
@@ -845,40 +846,90 @@ class _RoutesSheet extends StatelessWidget {
                               print("trip type: ${option.mode.label}");
                               print("trip co2Saved: ${co2Saved}");
 
-                              final pet = PetData.instance;
-                              final owner = pet.owner;
-
+                              final _petData = PetData.instance;
                               bool petSaved = false;
 
-                              //                             try {
-                              //   await PetData.instance.recordTrip(
-                              //     mode.label,
-                              //     co2Saved,
-                              //   );
-                              // } catch (error) {
-                              //   print("PetData Error: ${error.toString()}");
-                              // }
+                              // bool _petReady =
+                              //     !_petData.busy &&
+                              //     !_petData.needsRetry &&
+                              //     !_petData.needsRefresh;
+
                               try {
-                                if (pet.local && owner != null && !pet.busy) {
-                                  petSaved = await pet.recordTrip(
-                                    option.mode.label,
-                                    co2Saved,
+                                // A user must be bound before PetData can load.
+                                if (_petData.owner == null) {
+                                  debugPrint(
+                                    'Trip save failed: no pet owner is bound.',
                                   );
+                                  return;
                                 }
 
+                                // Resolve any previously pending save first.
+                                if (_petData.needsRetry) {
+                                  final retried = await _petData.retry();
+
+                                  if (!retried || _petData.needsRetry) {
+                                    debugPrint(
+                                      'Trip save failed: pending save needs retry.',
+                                    );
+                                    return;
+                                  }
+                                }
+
+                                // Load the pet state if it has not been initialized.
+                                if (_petData.value == null ||
+                                    _petData.needsRefresh) {
+                                  await _petData.load();
+                                }
+
+                                // Verify the state is available before recording the trip.
+                                if (_petData.value == null ||
+                                    _petData.busy ||
+                                    _petData.needsRetry ||
+                                    _petData.needsRefresh) {
+                                  debugPrint(
+                                    'Trip save failed: PetData is not ready. '
+                                    'value=${_petData.value != null}, '
+                                    'busy=${_petData.busy}, '
+                                    'needsRetry=${_petData.needsRetry}, '
+                                    'needsRefresh=${_petData.needsRefresh}, '
+                                    'error=${_petData.error}',
+                                  );
+                                  return;
+                                }
+
+                                if (!_petData.local) {
+                                  debugPrint(
+                                    'Trip save failed: PetData is not local.',
+                                  );
+                                  return;
+                                }
+
+                                print("Mode for PetData: ${option.mode.label}");
+                                print("co2Saved for PetData: ${co2Saved}");
+
+                                debugPrint('Trip mode: "${option.mode.label}"');
+                                debugPrint('CO2 saved: $co2Saved');
                                 debugPrint(
-                                  'Pet database save result: $petSaved',
+                                  'CO2 is finite: ${co2Saved.isFinite}',
                                 );
+
+                                petSaved = await _petData.recordTrip(
+                                  option.mode.label,
+                                  co2Saved,
+                                );
+
+                                debugPrint('Pet trip saved: $petSaved');
 
                                 if (!petSaved) {
                                   debugPrint(
-                                    'Pet trip was not confirmed. Check the pet owner, '
-                                    'local mode, readiness, and save result.',
+                                    'PetData rejected the trip: ${_petData.error}',
                                   );
+                                  return;
                                 }
                               } catch (error, stackTrace) {
                                 debugPrint('Pet trip save error: $error');
                                 debugPrintStack(stackTrace: stackTrace);
+                                return;
                               }
 
                               await UserDatabase.instance.saveRecordedTrip(
@@ -886,7 +937,7 @@ class _RoutesSheet extends StatelessWidget {
                                 transportMode: option.mode.label,
                                 co2SavedKg: co2Saved,
                                 distanceKm: distTraveled,
-                                durationMinutes: int.parse(_duration(option.duration)),
+                                durationMinutes: option.duration.inMinutes,
                                 coinsEarned: (co2Saved * 10).floor(),
                                 tripDate: DateTime.now().toLocal(),
                               );
