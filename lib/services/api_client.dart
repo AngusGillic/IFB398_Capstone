@@ -67,7 +67,7 @@ class ApiClient {
 
     Map<String, dynamic> userMap = {
       "profile": {
-        "first_name": fullName,
+        // "first_name": fullName,
         "full_name": fullName,
         "email": (
             attributes.firstWhere(
@@ -77,7 +77,7 @@ class ApiClient {
               ),
             )
         ).value,
-        "member_since": "2026-03-27",
+        // "member_since": "2026-03-27",
       },
       "impact": {
         "week": {

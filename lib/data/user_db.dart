@@ -264,7 +264,7 @@ class UserDatabase {
       'trip_date': tripDate.toUtc().toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.ignore);
 
-// Weekly trip data insert
+    // Weekly trip data insert
     await db.rawInsert(
       '''
   INSERT INTO impact_stats (user_id, period, co2_saved_kg, goal_kg, green_km, driven_km, change_vs_previous, trips)
@@ -279,7 +279,7 @@ class UserDatabase {
       [userId, 'week', co2SavedKg, 15, greenKm, drivenKm, changeVsPrevious],
     );
 
-// Monthly trip data insert
+    // Monthly trip data insert
     await db.rawInsert(
       '''
   INSERT INTO impact_stats (user_id, period, co2_saved_kg, goal_kg, green_km, driven_km, change_vs_previous, trips)
@@ -291,10 +291,18 @@ class UserDatabase {
     change_vs_previous = impact_stats.change_vs_previous + excluded.change_vs_previous,
     trips = impact_stats.trips + 1
 ''',
-      [userId, 'month', co2SavedKg, 15 * 4, greenKm, drivenKm, changeVsPrevious],
+      [
+        userId,
+        'month',
+        co2SavedKg,
+        15 * 4,
+        greenKm,
+        drivenKm,
+        changeVsPrevious,
+      ],
     );
 
-// Yearly Trip data insert
+    // Yearly Trip data insert
     await db.rawInsert(
       '''
   INSERT INTO impact_stats (user_id, period, co2_saved_kg, goal_kg, green_km, driven_km, change_vs_previous, trips)
@@ -306,7 +314,15 @@ class UserDatabase {
     change_vs_previous = impact_stats.change_vs_previous + excluded.change_vs_previous,
     trips = impact_stats.trips + 1
 ''',
-      [userId, 'year', co2SavedKg, 15 * 52 , greenKm, drivenKm, changeVsPrevious],
+      [
+        userId,
+        'year',
+        co2SavedKg,
+        15 * 52,
+        greenKm,
+        drivenKm,
+        changeVsPrevious,
+      ],
     );
 
     await db.rawInsert(
@@ -490,8 +506,31 @@ class UserDatabase {
         'impact': impact,
         'lifetime': lifetime,
         'pet': pet,
-        'suggestions': suggestions,
-        'challenge': challenge,
+        "suggestions": [
+          {
+            "label": "Work",
+            "mode": "Bus",
+            "duration_minutes": 30,
+            "co2_saved_kg": 0.8,
+            "leave_at": "8:20am",
+            "arrive_at": "8:50am",
+          },
+          {
+            "label": "Work",
+            "mode": "Transit",
+            "duration_minutes": 30,
+            "co2_saved_kg": 1.2,
+            "leave_at": "8:00am",
+            "arrive_at": "8:30am",
+          },
+        ],
+        "challenge": {
+          "title": "Green Week Walk Challenge",
+          "days_done": 3,
+          "days_total": 7,
+          "steps": 2000,
+          "step_goal": 10000,
+        },
       };
 
       return userMap;
