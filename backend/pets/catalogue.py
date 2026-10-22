@@ -9,6 +9,36 @@ ITEMS = {
     'water': {'price': 5, 'durable': False},
     'fertiliser': {'price': 10, 'durable': False},
     'kennel': {'price': 50, 'durable': True},
+
+    # Backgrounds
+    'room2': {'price': 100, 'durable': True},
+    'room3': {'price': 150, 'durable': True},
+
+    # Rugs
+    'flowerrug': {'price': 40, 'durable': True},
+    'pinkrug': {'price': 40, 'durable': True},
+
+    # Plants
+    'plant1': {'price': 25, 'durable': True},
+    'plant2': {'price': 30, 'durable': True},
+    'plant3': {'price': 35, 'durable': True},
+    'plant4': {'price': 40, 'durable': True},
+    'plant5': {'price': 45, 'durable': True},
+
+    # Left slot
+    'house1': {'price': 50, 'durable': True},
+    'house2': {'price': 65, 'durable': True},
+    'house3': {'price': 80, 'durable': True},
+    'petbed': {'price': 45, 'durable': True},
+
+    # Top-right slot
+    'cattree': {'price': 70, 'durable': True},
+    'lamp1': {'price': 35, 'durable': True},
+    'lamp2': {'price': 45, 'durable': True},
+
+    # Extras
+    'ball': {'price': 15, 'durable': True},
+    'bone': {'price': 10, 'durable': False},
 }
 
 ACTIONS = {

@@ -148,6 +148,11 @@ class PetData extends ValueNotifier<PetState?> {
     return _save('purchases', {'item_id': id});
   }
 
+  Future<bool> equip(String id) {
+    if (shop?.items.containsKey(id) != true) return Future.value(false);
+    return _save('equipment', {'item_id': id});
+  }
+
   bool needsCare(String id) {
     final stats = value?.stats;
     if (stats == null) return false;

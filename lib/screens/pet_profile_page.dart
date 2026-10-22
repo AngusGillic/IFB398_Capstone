@@ -1,3 +1,4 @@
+
 import 'package:flutter/cupertino.dart';
 
 import '../core/pet_data.dart';
@@ -16,6 +17,22 @@ class PetProfilePage extends StatelessWidget {
   const PetProfilePage({super.key, this.data});
 
   final PetData? data;
+
+  String? _petAsset(String petId) {
+    switch (petId) {
+      case 'puppy':
+        return 'assets/images/frames/dingohappy1.png';
+
+      case 'frill':
+        return 'assets/images/frames/frilliehappy1.png';
+
+      case 'koala':
+        return 'assets/images/frames/koala.png';
+
+      default:
+        return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +80,17 @@ class PetProfilePage extends StatelessWidget {
             child: Center(
               child: Column(
                 children: [
-                  PetAvatar(pet: pet, size: 128),
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: _petAsset(pet.id) != null
+                        ? Image.asset(
+                            _petAsset(pet.id)!,
+                            width: 128,
+                            height: 128,
+                            fit: BoxFit.contain,
+                          )
+                        : PetAvatar(pet: pet, size: 128),
+                  ),
                   const SizedBox(height: LGGap.edge),
                   Text(pet.name, style: LGText.title1(context)),
                   const SizedBox(height: LGGap.xxs),

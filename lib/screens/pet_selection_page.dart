@@ -1,9 +1,9 @@
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
 import '../core/pet_data.dart';
 import '../widgets/pet_data_view.dart';
-import '../widgets/pet_avatar.dart';
 import '../models/pet.dart';
 import '../ui/entrance.dart';
 import '../ui/glass.dart';
@@ -25,7 +25,8 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
   double get _savedKg => _data.value?.co2SavedKg ?? 0;
 
   String? _focusedOwner;
-  late String _focused = _data.value?.selectedPetId ?? PetCatalogue.all.first.id;
+  late String _focused =
+      _data.value?.selectedPetId ?? PetCatalogue.all.first.id;
 
   Pet get _pet => PetCatalogue.byId(_focused);
   bool get _unlocked => _pet.isUnlockedAt(_savedKg);
@@ -54,8 +55,13 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
       _focusedOwner = _data.owner;
       _focused = _data.value!.selectedPetId;
     }
-    final unlocked = PetCatalogue.all.where((p) => p.isUnlockedAt(_savedKg)).toList();
-    final locked = PetCatalogue.all.where((p) => !p.isUnlockedAt(_savedKg)).toList();
+
+    final unlocked = PetCatalogue.all
+        .where((p) => p.isUnlockedAt(_savedKg))
+        .toList();
+    final locked = PetCatalogue.all
+        .where((p) => !p.isUnlockedAt(_savedKg))
+        .toList();
     final next = locked.isEmpty ? null : locked.first;
     final secondary = LGColor.resolve(LGColor.secondaryLabel, context);
 
@@ -70,17 +76,24 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
           Entrance(
             index: 0,
             offset: 0,
-            child: _Hero(pet: _pet, unlocked: _unlocked, savedKg: _savedKg),
+            child: _Hero(
+              pet: _pet,
+              unlocked: _unlocked,
+              savedKg: _savedKg,
+            ),
           ),
           Expanded(
             child: ListView(
-              physics:
-                  const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
               padding: EdgeInsets.fromLTRB(
                 LGGap.edge,
                 LGGap.lg,
                 LGGap.edge,
-                MediaQuery.paddingOf(context).bottom + AppShell.navHeight + LGGap.section,
+                MediaQuery.paddingOf(context).bottom +
+                    AppShell.navHeight +
+                    LGGap.section,
               ),
               children: [
                 PetStatus(data: _data),
@@ -96,13 +109,20 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
                         ? CupertinoIcons.check_mark
                         : CupertinoIcons.lock_fill,
                     loading: _data.busy,
-                    onPressed: _unlocked && !_data.needsRetry && !_data.needsRefresh ? _confirm : null,
+                    onPressed: _unlocked &&
+                            !_data.needsRetry &&
+                            !_data.needsRefresh
+                        ? _confirm
+                        : null,
                   ),
                 ),
                 const SizedBox(height: LGGap.section),
 
                 if (next != null) ...[
-                  Entrance(index: ++row, child: _NextUp(pet: next, savedKg: _savedKg)),
+                  Entrance(
+                    index: ++row,
+                    child: _NextUp(pet: next, savedKg: _savedKg),
+                  ),
                   const SizedBox(height: LGGap.section),
                 ],
 
@@ -137,7 +157,9 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
                     index: ++row,
                     child: Text(
                       'Each one turns up once you have saved enough carbon.',
-                      style: LGText.footnote(context).copyWith(color: secondary),
+                      style: LGText.footnote(context).copyWith(
+                        color: secondary,
+                      ),
                     ),
                   ),
                   const SizedBox(height: LGGap.lg),
@@ -161,7 +183,10 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, required this.trailing});
+  const _SectionHeader({
+    required this.title,
+    required this.trailing,
+  });
 
   final String title;
   final String trailing;
@@ -175,7 +200,10 @@ class _SectionHeader extends StatelessWidget {
           Text(title, style: LGText.title3(context)),
           const SizedBox(width: LGGap.md),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: LGGap.md, vertical: 1),
+            padding: const EdgeInsets.symmetric(
+              horizontal: LGGap.md,
+              vertical: 1,
+            ),
             decoration: ShapeDecoration(
               color: LGColor.resolve(LGColor.fill, context),
               shape: LGShape.border(LGRadius.pill),
@@ -183,7 +211,10 @@ class _SectionHeader extends StatelessWidget {
             child: Text(
               trailing,
               style: LGText.caption2(context).copyWith(
-                color: LGColor.resolve(LGColor.secondaryLabel, context),
+                color: LGColor.resolve(
+                  LGColor.secondaryLabel,
+                  context,
+                ),
               ),
             ),
           ),
@@ -193,9 +224,11 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-/// The nearest unlock.
 class _NextUp extends StatelessWidget {
-  const _NextUp({required this.pet, required this.savedKg});
+  const _NextUp({
+    required this.pet,
+    required this.savedKg,
+  });
 
   final Pet pet;
   final double savedKg;
@@ -212,7 +245,12 @@ class _NextUp extends StatelessWidget {
       shadows: LGShadow.low(context),
       child: Row(
         children: [
-          _PetArt(pet: pet, size: 46, dimmed: true),
+          _PetArt(
+            petId: pet.id,
+            size: 46,
+            accent: pet.accent,
+            dimmed: true,
+          ),
           const SizedBox(width: LGGap.edge),
           Expanded(
             child: Column(
@@ -223,14 +261,21 @@ class _NextUp extends StatelessWidget {
                   'Next: ${pet.name} the ${pet.species.toLowerCase()}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: LGText.subhead(context).copyWith(fontWeight: FontWeight.w600),
+                  style: LGText.subhead(context).copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: LGGap.sm),
-                GlassProgress(value: pet.progressAt(savedKg), height: 5),
+                GlassProgress(
+                  value: pet.progressAt(savedKg),
+                  height: 5,
+                ),
                 const SizedBox(height: LGGap.sm),
                 Text(
                   '${remaining.toStringAsFixed(0)} kg of CO₂ to go',
-                  style: LGText.caption1(context).copyWith(color: secondary),
+                  style: LGText.caption1(context).copyWith(
+                    color: secondary,
+                  ),
                 ),
               ],
             ),
@@ -280,7 +325,11 @@ class _PetGrid extends StatelessWidget {
 }
 
 class _Hero extends StatelessWidget {
-  const _Hero({required this.pet, required this.unlocked, required this.savedKg});
+  const _Hero({
+    required this.pet,
+    required this.unlocked,
+    required this.savedKg,
+  });
 
   final Pet pet;
   final bool unlocked;
@@ -295,7 +344,11 @@ class _Hero extends StatelessWidget {
       duration: LGMotion.slow,
       curve: LGMotion.standard,
       padding: EdgeInsets.fromLTRB(
-          LGGap.edge, top + LGGap.section, LGGap.edge, LGGap.section),
+        LGGap.edge,
+        top + LGGap.section,
+        LGGap.edge,
+        LGGap.section,
+      ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -308,7 +361,13 @@ class _Hero extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _PetArt(pet: pet, size: 124, dimmed: !unlocked, locked: !unlocked),
+          _PetArt(
+            petId: pet.id,
+            size: 124,
+            accent: pet.accent,
+            dimmed: !unlocked,
+            locked: !unlocked,
+          ),
           const SizedBox(height: LGGap.edge),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -322,7 +381,10 @@ class _Hero extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: LGGap.md),
-              GlassPill(label: pet.rarity.label, color: pet.rarity.color),
+              GlassPill(
+                label: pet.rarity.label,
+                color: pet.rarity.color,
+              ),
             ],
           ),
           const SizedBox(height: LGGap.xxs),
@@ -332,7 +394,9 @@ class _Hero extends StatelessWidget {
           ),
           const SizedBox(height: LGGap.lg),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: LGGap.section),
+            padding: const EdgeInsets.symmetric(
+              horizontal: LGGap.section,
+            ),
             child: Text(
               pet.blurb,
               textAlign: TextAlign.center,
@@ -372,7 +436,10 @@ class _PetTile extends StatelessWidget {
             ? ShapeDecoration(
                 shape: LGShape.border(
                   LGRadius.md,
-                  side: BorderSide(color: pet.accent, width: 2),
+                  side: BorderSide(
+                    color: pet.accent,
+                    width: 2,
+                  ),
                 ),
               )
             : null,
@@ -380,15 +447,18 @@ class _PetTile extends StatelessWidget {
           radius: LGRadius.md,
           blur: LGGlass.blurLight,
           dense: true,
-          tint: selected ? pet.accent.withValues(alpha: 0.10) : null,
+          tint: selected
+              ? pet.accent.withValues(alpha: 0.10)
+              : null,
           padding: const EdgeInsets.all(LGGap.lg),
           shadows: LGShadow.low(context),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _PetArt(
+                petId: pet.id,
                 size: 50,
-                pet: pet,
+                accent: pet.accent,
                 dimmed: !unlocked,
                 locked: !unlocked,
               ),
@@ -398,7 +468,9 @@ class _PetTile extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: LGText.caption1(context).copyWith(
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: selected
+                      ? FontWeight.w600
+                      : FontWeight.w400,
                   color: unlocked
                       ? LGColor.resolve(LGColor.label, context)
                       : secondary,
@@ -406,7 +478,9 @@ class _PetTile extends StatelessWidget {
               ),
               const SizedBox(height: LGGap.xxs),
               Text(
-                unlocked ? pet.rarity.label : '${pet.unlockCo2Kg.toStringAsFixed(0)} kg',
+                unlocked
+                    ? pet.rarity.label
+                    : '${pet.unlockCo2Kg.toStringAsFixed(0)} kg',
                 maxLines: 1,
                 style: LGText.caption2(context).copyWith(
                   color: unlocked ? pet.rarity.color : secondary,
@@ -421,24 +495,98 @@ class _PetTile extends StatelessWidget {
 }
 
 class _PetArt extends StatelessWidget {
-  const _PetArt({required this.pet, required this.size, this.dimmed = false, this.locked = false});
+  const _PetArt({
+    required this.petId,
+    required this.size,
+    required this.accent,
+    this.dimmed = false,
+    this.locked = false,
+  });
 
-  final Pet pet;
+  final String petId;
   final double size;
+  final Color accent;
   final bool dimmed;
   final bool locked;
 
+  String? get assetPath {
+    switch (petId) {
+      case 'puppy':
+        return 'assets/images/frames/dingohappy1.png';
+
+      case 'frill':
+        return 'assets/images/frames/frilliehappy1.png';
+
+      case 'koala':
+        return 'assets/images/frames/koala.png';
+
+      default:
+        return null;
+    }
+  }
+
   @override
-  Widget build(BuildContext context) => SizedBox(
-    width: size,
-    height: size,
-    child: Stack(
-      alignment: Alignment.center,
-      children: [
-        Opacity(opacity: dimmed ? 0.35 : 1, child: PetAvatar(pet: pet, size: size)),
-        if (locked) Icon(CupertinoIcons.lock_fill, size: size * 0.24,
-          color: LGColor.resolve(LGColor.secondaryLabel, context)),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) {
+    final dark =
+        CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final radius = size > 80 ? LGRadius.lg : LGRadius.sm;
+    final image = assetPath;
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            decoration: ShapeDecoration(
+              color: accent.withValues(
+                alpha: dimmed ? 0.06 : 0.14,
+              ),
+              shape: LGShape.border(radius),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(size * 0.11),
+            child: Opacity(
+              opacity: dimmed ? 0.35 : 1,
+              child: image != null
+                  ? Image.asset(
+                      image,
+                      width: size,
+                      height: size,
+                      fit: BoxFit.contain,
+                    )
+                  : Container(
+                      decoration: ShapeDecoration(
+                        color: dark
+                            ? const Color(0xFF2C2C2E)
+                            : const Color(0xFFFFFFFF),
+                        shape: LGShape.border(
+                          radius - 3,
+                          side: BorderSide(
+                            color: LGColor.resolve(
+                              LGColor.separator,
+                              context,
+                            ).withValues(alpha: 0.35),
+                            width: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+          if (locked)
+            Icon(
+              CupertinoIcons.lock_fill,
+              size: size * 0.24,
+              color: LGColor.resolve(
+                LGColor.secondaryLabel,
+                context,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
