@@ -14,6 +14,8 @@ class UserDataSession {
   static bool _binding = false;
   static int _authSession = 0;
 
+  static String? get boundUserId => _boundUserId;
+
   /// Call after Cognito session is confirmed (login / SessionGate).
   static Future<void> onAuthenticated() async {
     if (_binding) return;

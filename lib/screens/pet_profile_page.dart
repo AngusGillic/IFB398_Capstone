@@ -1,3 +1,4 @@
+
 import 'package:flutter/cupertino.dart';
 
 import '../core/pet_data.dart';
@@ -10,6 +11,7 @@ import '../ui/glass_widgets.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/card_panels.dart';
 import '../widgets/charts.dart';
+import '../widgets/pet_avatar.dart';
 
 class PetProfilePage extends StatelessWidget {
   const PetProfilePage({super.key, this.data});
@@ -36,7 +38,8 @@ class PetProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return PetDataView(
       data: data,
-      builder: (context, state) => _build(context, PetCatalogue.byId(state.selectedPetId), state),
+      builder: (context, state) =>
+          _build(context, PetCatalogue.byId(state.selectedPetId), state),
     );
   }
 
@@ -57,149 +60,172 @@ class PetProfilePage extends StatelessWidget {
       selectedIndex: 4,
       padding: EdgeInsets.zero,
       child: ListView(
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
         padding: EdgeInsets.fromLTRB(
           LGGap.edge,
           MediaQuery.paddingOf(context).top + LGGap.md,
           LGGap.edge,
-          MediaQuery.paddingOf(context).bottom + AppShell.navHeight + LGGap.section,
+          MediaQuery.paddingOf(context).bottom +
+              AppShell.navHeight +
+              LGGap.section,
         ),
         children: [
           PetStatus(data: data),
           Entrance(index: 0, child: const BackTitle(title: 'Profile')),
 
-          Entrance(index: 1, child: Center(
-            child: Column(
-              children: [
-                Container(
-                  width: 128,
-                  height: 128,
-                  decoration: ShapeDecoration(
-                    color: CupertinoTheme.brightnessOf(context) == Brightness.dark
-                        ? const Color(0xFF2C2C2E)
-                        : const Color(0xFFFFFFFF),
-                    shape: LGShape.border(
-                      LGRadius.lg,
-                      side: BorderSide(
-                        color: LGColor.resolve(LGColor.separator, context)
-                            .withValues(alpha: 0.4),
-                        width: 0.5,
-                      ),
-                    ),
+          Entrance(
+            index: 1,
+            child: Center(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: _petAsset(pet.id) != null
+                        ? Image.asset(
+                            _petAsset(pet.id)!,
+                            width: 128,
+                            height: 128,
+                            fit: BoxFit.contain,
+                          )
+                        : PetAvatar(pet: pet, size: 128),
                   ),
-                  child: Padding(padding: const EdgeInsets.all(10), child: _petAsset(pet.id) != null
-                    ? Image.asset(_petAsset(pet.id)!, fit: BoxFit.contain)
-                    : null
+                  const SizedBox(height: LGGap.edge),
+                  Text(pet.name, style: LGText.title1(context)),
+                  const SizedBox(height: LGGap.xxs),
+                  Text(
+                    '${pet.species} · ${pet.habitat}',
+                    style: LGText.subhead(context).copyWith(color: secondary),
                   ),
-                ),
-                const SizedBox(height: LGGap.edge),
-                Text(pet.name, style: LGText.title1(context)),
-                const SizedBox(height: LGGap.xxs),
-                Text(
-                  '${pet.species} · ${pet.habitat}',
-                  style: LGText.subhead(context).copyWith(color: secondary),
-                ),
-                const SizedBox(height: LGGap.lg),
-                GlassPill(label: pet.rarity.label, color: pet.rarity.color),
-              ],
+                  const SizedBox(height: LGGap.lg),
+                  GlassPill(label: pet.rarity.label, color: pet.rarity.color),
+                ],
+              ),
             ),
-          )),
+          ),
           const SizedBox(height: LGGap.section),
 
-          Entrance(index: 2, child: GreyPanel(
-            padding: const EdgeInsets.all(LGGap.edge),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(child: Text('Level $level', style: LGText.headline(context))),
-                    const SizedBox(width: LGGap.md),
-                    Flexible(
-                      child: Text(
-                        '${(levelProgress * 100).round()}% to level ${level + 1}',
-                        style: LGText.caption1(context).copyWith(color: secondary),
+          Entrance(
+            index: 2,
+            child: GreyPanel(
+              padding: const EdgeInsets.all(LGGap.edge),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Level $level',
+                          style: LGText.headline(context),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: LGGap.lg),
-                GlassProgress(value: levelProgress),
-              ],
-            ),
-          )),
-          const SizedBox(height: LGGap.lg),
-
-          Entrance(index: 3, child: GreyPanel(
-            padding: const EdgeInsets.all(LGGap.edge),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('About ${pet.name}', style: LGText.headline(context)),
-                const SizedBox(height: LGGap.md),
-                Text(
-                  pet.blurb,
-                  style: LGText.footnote(context).copyWith(color: secondary, height: 1.45),
-                ),
-              ],
-            ),
-          )),
-          const SizedBox(height: LGGap.lg),
-
-          Entrance(index: 4, child: GreyPanel(
-            padding: const EdgeInsets.fromLTRB(LGGap.edge, LGGap.md, LGGap.edge, LGGap.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: LGGap.md),
-                Text('Condition', style: LGText.headline(context)),
-                ImpactBar(
-                  icon: CupertinoIcons.heart_fill,
-                  label: 'Happiness',
-                  value: '${(stats.happiness * 100).round()}%',
-                  fraction: stats.happiness,
-                  color: LGColor.resolve(LGColor.burn, context),
-                ),
-                ImpactBar(
-                  icon: CupertinoIcons.bolt_fill,
-                  label: 'Energy',
-                  value: '${(stats.energy * 100).round()}%',
-                  fraction: stats.energy,
-                  color: effort,
-                ),
-                ImpactBar(
-                  icon: CupertinoIcons.leaf_arrow_circlepath,
-                  label: 'Health',
-                  value: '${(stats.health * 100).round()}%',
-                  fraction: stats.health,
-                  color: eco,
-                ),
-              ],
-            ),
-          )),
-          const SizedBox(height: LGGap.lg),
-
-          Entrance(index: 5, child: Row(
-            children: [
-              Expanded(
-                child: _MiniStat(
-                  icon: CupertinoIcons.calendar,
-                  value: '${stats.daysTogether}',
-                  label: 'days together',
-                  color: accent,
-                ),
+                      const SizedBox(width: LGGap.md),
+                      Flexible(
+                        child: Text(
+                          '${(levelProgress * 100).round()}% to level ${level + 1}',
+                          style: LGText.caption1(
+                            context,
+                          ).copyWith(color: secondary),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: LGGap.lg),
+                  GlassProgress(value: levelProgress),
+                ],
               ),
-              const SizedBox(width: LGGap.lg),
-              Expanded(
-                child: _MiniStat(
-                  icon: CupertinoIcons.leaf_arrow_circlepath,
-                  value: savedKg.toStringAsFixed(0),
-                  label: 'kg CO₂ raised on',
-                  color: eco,
-                ),
+            ),
+          ),
+          const SizedBox(height: LGGap.lg),
+
+          Entrance(
+            index: 3,
+            child: GreyPanel(
+              padding: const EdgeInsets.all(LGGap.edge),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('About ${pet.name}', style: LGText.headline(context)),
+                  const SizedBox(height: LGGap.md),
+                  Text(
+                    pet.blurb,
+                    style: LGText.footnote(
+                      context,
+                    ).copyWith(color: secondary, height: 1.45),
+                  ),
+                ],
               ),
-            ],
-          )),
+            ),
+          ),
+          const SizedBox(height: LGGap.lg),
+
+          Entrance(
+            index: 4,
+            child: GreyPanel(
+              padding: const EdgeInsets.fromLTRB(
+                LGGap.edge,
+                LGGap.md,
+                LGGap.edge,
+                LGGap.md,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: LGGap.md),
+                  Text('Condition', style: LGText.headline(context)),
+                  ImpactBar(
+                    icon: CupertinoIcons.heart_fill,
+                    label: 'Happiness',
+                    value: '${(stats.happiness * 100).round()}%',
+                    fraction: stats.happiness,
+                    color: LGColor.resolve(LGColor.burn, context),
+                  ),
+                  ImpactBar(
+                    icon: CupertinoIcons.bolt_fill,
+                    label: 'Energy',
+                    value: '${(stats.energy * 100).round()}%',
+                    fraction: stats.energy,
+                    color: effort,
+                  ),
+                  ImpactBar(
+                    icon: CupertinoIcons.leaf_arrow_circlepath,
+                    label: 'Health',
+                    value: '${(stats.health * 100).round()}%',
+                    fraction: stats.health,
+                    color: eco,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: LGGap.lg),
+
+          Entrance(
+            index: 5,
+            child: Row(
+              children: [
+                Expanded(
+                  child: _MiniStat(
+                    icon: CupertinoIcons.calendar,
+                    value: '${stats.daysTogether}',
+                    label: 'days together',
+                    color: accent,
+                  ),
+                ),
+                const SizedBox(width: LGGap.lg),
+                Expanded(
+                  child: _MiniStat(
+                    icon: CupertinoIcons.leaf_arrow_circlepath,
+                    value: savedKg.toStringAsFixed(0),
+                    label: 'kg CO₂ raised on',
+                    color: eco,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -234,9 +260,15 @@ class _MiniStat extends StatelessWidget {
         children: [
           Icon(icon, size: 17, color: color),
           const SizedBox(height: LGGap.lg),
-          Text(value, style: LGText.mono(context, size: 22, weight: FontWeight.w700)),
+          Text(
+            value,
+            style: LGText.mono(context, size: 22, weight: FontWeight.w700),
+          ),
           const SizedBox(height: LGGap.xxs),
-          Text(label, style: LGText.caption1(context).copyWith(color: secondary)),
+          Text(
+            label,
+            style: LGText.caption1(context).copyWith(color: secondary),
+          ),
         ],
       ),
     );

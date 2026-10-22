@@ -5,11 +5,14 @@ import '../data/user_data.dart';
 import '../models/garden_catalogue.dart';
 import '../models/pet.dart';
 import '../models/pet_state.dart';
+import '../models/pet_trip.dart';
 import '../services/pet_api.dart';
+import '../services/local_pet_store.dart';
+import '../services/pet_repository.dart';
 
 class PetData extends ValueNotifier<PetState?> {
   PetData({
-    required PetApi api,
+    required PetRepository api,
     void Function(PetState)? onChanged,
     VoidCallback? onCleared,
     DateTime Function()? clock,
@@ -19,9 +22,9 @@ class PetData extends ValueNotifier<PetState?> {
        _clock = clock ?? DateTime.now,
        super(null);
 
-  static final PetData instance = PetData(api: PetApi());
+  static final PetData instance = PetData(api: LocalPetStore());
 
-  final PetApi _api;
+  final PetRepository _api;
   final void Function(PetState) _onChanged;
   final VoidCallback _onCleared;
   final DateTime Function() _clock;
@@ -36,6 +39,25 @@ class PetData extends ValueNotifier<PetState?> {
   bool busy = false;
   String? error;
   ({String operation, Map<String, dynamic> body})? _pending;
+
+  bool get local => _api.local;
+
+  Future<List<PetTrip>> tripHistory() async {
+    final owner = _owner;
+    if (owner == null) return [];
+    final session = _session;
+    final history = await _api.trips(owner);
+    return session == _session ? history : [];
+  }
+
+  Future<bool> recordTrip(String mode, double savedKg, {String? tripId}) {
+    if (!local) return Future.value(false);
+    return _save('trips', {
+      'trip_id': tripId ?? UUID.getUUID(),
+      'mode': mode,
+      'saved_kg': savedKg,
+    });
+  }
 
   String? get owner => _owner;
   bool get signedIn => _owner != null;

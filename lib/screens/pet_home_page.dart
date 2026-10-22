@@ -12,9 +12,10 @@ import '../ui/glass.dart';
 import '../ui/glass_widgets.dart';
 import '../widgets/app_scaffold.dart';
 import '../widgets/card_panels.dart';
-import '../widgets/mock_painters.dart';
+import '../widgets/pet_avatar.dart';
 import 'activities_page.dart';
 import 'pet_profile_page.dart';
+import 'pet_selection_page.dart';
 
 class PetHomePage extends StatefulWidget {
   const PetHomePage({super.key, this.data});
@@ -481,7 +482,7 @@ class _PetHomePageState extends State<PetHomePage> {
                 ),
                 const SizedBox(width: LGGap.md),
                 GlassPill(
-                  label: '${state.stats.coins}',
+                  label : '${state.stats.coins}',
                   icon: CupertinoIcons.money_dollar_circle_fill,
                   color: LGColor.resolve(LGColor.effort, context),
                 ),

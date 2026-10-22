@@ -1,3 +1,7 @@
+> The Flutter Pets feature currently uses local SQLite and does not call this
+> backend. See `../PETS_BACKEND.md` for the current demonstration setup. This
+> directory is retained for future remote integration.
+
 # Pets server
 
 This adds a standalone Lambda/DynamoDB backend alongside the Flutter app. It

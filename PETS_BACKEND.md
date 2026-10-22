@@ -1,9 +1,72 @@
-# Pets backend
+# Pets: local SQLite storage
 
-The Pets screens currently read stats from `AppData` and selection from
-`PetController`. `PetState` is the response model for the proposed Pets API.
-It reuses `PetStats`, so the existing profile and garden can keep their data
-structure when the API is connected.
+Pets now uses `LocalPetStore` by default through `PetData.instance`. No Pets API,
+AWS deployment, database server or `PETS_API_URL` is needed. Cloud sign-in is
+unchanged: the existing session binds the signed-in user ID, which scopes all
+Pets records in SQLite.
+
+Run the app as usual, sign in, then open Pet. The database is created on first
+use. On Windows and Linux, `pets.db` is in the application support directory;
+on macOS and mobile, it uses the platform SQLite database directory. It is
+outside the repository and persists across app restarts.
+
+In the garden, open Activities and record a local demonstration trip. Walking
+saves 0.5 kg and earns 5 coins, cycling saves 1 kg and earns 10 coins, and public
+transport saves 2 kg and earns 20 coins. These are clearly labelled simulations,
+not tracked journeys. Rewards unlock pets and fund garden purchases immediately.
+Activities displays the user's saved local trip history. Change pet returns to
+the selection page without having to leave Pets.
+
+The database contains `pets` (full per-user pet records), `catalogues`,
+`pet_requests` (retry receipts) and `pet_trips` (per-user reward history).
+Purchases, care, rewards and receipts commit in one SQL transaction. Version
+checks prevent two screens from spending the same balance. Repeating a request
+returns its saved receipt; repeating a trip ID cannot award coins again.
+The version-one database from the original SQLite helper upgrades automatically,
+and its existing pet snapshots are preserved.
+
+Care decays while away and refreshes in the garden each minute. Each hour loses
+2 happiness, 4 energy and 1 health percentage points. Water restores 10 health
+and 5 happiness points; fertiliser restores 20 health points; sunlight restores
+15 energy points with a one-hour cooldown. Values stay between 0 and 100%.
+Care with no effect cannot consume an item. Pots halve happiness decline;
+kennels halve energy decline. Switching pets preserves their individual
+condition and cooldowns. Inventory and coins are shared only within that user.
+
+A local trip integration can call
+`PetData.instance.recordTrip(mode, savedKg, tripId: stableTripId)` using
+`Walking`, `Cycling` or `Public transport`. Supply the original trip ID when
+connecting an existing trip flow; retries must not invent a new ID. Returns
+`true` on success and exposes errors through the usual Pets status and retry UI.
+For the demonstration, the Activities screen already provides the complete
+reward-to-care loop without a trips API.
+
+Local data stays on that device; it does not sync through Cognito. Signing out
+clears visible Pets data but keeps SQLite records for the next sign-in by the
+same user. New users start with zero coins and need to record a local trip to
+buy care items. Sunlight is free.
+
+## Verification
+
+From the project root after `flutter pub get`:
+
+```powershell
+flutter test --no-pub test/local_pet_store_test.dart test/local_pet_pages_test.dart test/pet_state_test.dart test/pet_data_test.dart test/pet_pages_test.dart test/pet_garden_test.dart
+```
+
+The local SQL tests open real SQLite databases, including a disk-backed restart
+and a version-one upgrade. UI checks cover recording rewards, buying and using
+care, changing pets, account isolation, and small screens with larger text.
+All 49 local Pets checks passed. No separate test server or Python environment
+is needed for these checks.
+The Windows build was also checked with the packaged native SQLite library,
+including database creation, rewards, selection, purchases, care and reopening.
+
+## Optional remote implementation
+
+`PetApi` and `backend/` remain available for the team's future remote integration.
+They are not used by the current Pets singleton. The original contract below
+is retained as reference for that implementation.
 
 ## State
 
@@ -15,9 +78,9 @@ All successful requests below return this complete snapshot:
   "adopted_at": "2026-10-13T00:00:00Z",
   "pet": {
     "coins": 0,
-    "happiness": 1.0,
-    "energy": 1.0,
-    "health": 1.0,
+    "happiness": 0.75,
+    "energy": 0.65,
+    "health": 0.8,
     "days_together": 0
   },
   "inventory": {},

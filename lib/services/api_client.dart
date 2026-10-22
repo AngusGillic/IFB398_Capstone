@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
+import 'package:travelly_flutter_ios_style/data/user_db.dart';
 
 import '../data/user_data.dart';
 import '../core/user_data_session.dart';
@@ -11,9 +12,8 @@ import '../services/username_mapper.dart';
 
 class ApiClient {
   // String userId
-  static const _base = 'https://api.travelly.example';
-  static const _base2 =
-      "https://9057i6cd5c.execute-api.ap-southeast-2.amazonaws.com/dev/trips";
+  // static const _base2 =
+  //     "yes";
 
   static Future<UserData> fetchUserData({String? token}) async {
     safePrint("1. Fetching data...");
@@ -23,9 +23,9 @@ class ApiClient {
 
     safePrint("2. Current logged in user: $userId");
 
-    final response2 = await http.get(Uri.parse('$_base2?userId=$userId'));
+    // final response2 = await http.get(Uri.parse('$_base2?userId=$userId'));
 
-    final decoded = jsonDecode(response2.body);
+    // final decoded = jsonDecode(response2.body);
     // safePrint("Decode type: ${decoded.runtimeType}");
     // safePrint("Decoded data: $decoded");
 
@@ -44,6 +44,7 @@ class ApiClient {
     //   safePrint(data.toList());
     // }
 
+
     // final List<AuthUserAttribute> attributes = await Amplify.Auth.fetchUserAttributes();
     final attributes = await Amplify.Auth.fetchUserAttributes();
 
@@ -53,6 +54,7 @@ class ApiClient {
         userAttributeKey: CognitoUserAttributeKey.email, value: "n/a",
       ),
     );
+
       
     final String fullName;
 
@@ -65,7 +67,7 @@ class ApiClient {
 
     Map<String, dynamic> userMap = {
       "profile": {
-        "first_name": fullName,
+        // "first_name": fullName,
         "full_name": fullName,
         "email": (
             attributes.firstWhere(
@@ -75,7 +77,7 @@ class ApiClient {
               ),
             )
         ).value,
-        "member_since": "2026-03-27",
+        // "member_since": "2026-03-27",
       },
       "impact": {
         "week": {
@@ -139,8 +141,13 @@ class ApiClient {
       },
     };
 
-    // return _parse(jsonDecode(response2.body) as Map<String, dynamic>);
-    return _parse(userMap);
+    final UserDatabase _dbService = UserDatabase.instance;
+    final String? userID = UserDataSession.boundUserId;
+    final result = await _dbService.fetchUserData(userId: userID);
+    
+    print(result);
+    // return _parse(userMap);
+    return _parse(result);
   }
 
   static UserData _parse(Map<String, dynamic> json) {
@@ -150,12 +157,12 @@ class ApiClient {
 
     return UserData(
       profile: LocalProfile(
-        firstName: profile['first_name'] as String? ?? '',
+        // firstName: profile['first_name'] as String? ?? '',
         fullName: profile['full_name'] as String? ?? '',
         email: profile['email'] as String? ?? '',
-        memberSince:
-            DateTime.tryParse(profile['member_since'] as String? ?? '') ??
-            DateTime.now(),
+        // memberSince:
+        //     DateTime.tryParse(profile['member_since'] as String? ?? '') ??
+        //     DateTime.now(),
       ),
       impact: {
         for (final range in ImpactRange.values)
