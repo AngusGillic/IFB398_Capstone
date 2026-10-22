@@ -36,7 +36,6 @@ class _HomePageState extends State<HomePage> {
 
   void initState() {
     super.initState();
-    // _spawnDataDynamo();
   }
 
   String get _greeting {
@@ -71,7 +70,7 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('$_greeting, ${data.profile.firstName}', style: LGText.largeTitle(context)),
+                    Text('$_greeting, ${data.profile.fullName}', style: LGText.largeTitle(context)),
                     const SizedBox(height: LGGap.xxs),
                     Text(
                       "Let's get green",

@@ -13,6 +13,7 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import '../services/username_mapper.dart';
 import '../core/user_data_session.dart';
+import '../data/user2.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -58,11 +59,34 @@ class _LoginPageState extends State<LoginPage> {
         username: username,
         password: passwordController.text,
       );
+      UserDatabase db = UserDatabase.instance;
+      final attributes = await Amplify.Auth.fetchUserAttributes();
+      final email = attributes.firstWhere(
+        (element) => element.userAttributeKey == CognitoUserAttributeKey.email,
+        orElse: () => const AuthUserAttribute(
+          userAttributeKey: CognitoUserAttributeKey.email,
+          value: "n/a",
+        ),
+      );
+      final String fullName;
+      if (email != "n/a") {
+        fullName = UsernameMapper.displayNameFrom(email.value);
+      } else {
+        fullName = "n/a";
+      }
+      safePrint("email variable: ${fullName}");
+      final cognitoID = await Amplify.Auth.getCurrentUser();
+      final profileSaved = await db.saveProfile(
+        userId: cognitoID.userId,
+        fullName: fullName,
+        email: email.value,
+      );
       if (result.isSignedIn) {
-        // (?)Isolate local data (groups, points, trips filter) to this Cognito sub.
         await UserDataSession.onAuthenticated();
         if (!mounted) return;
-        safePrint("Attributes of Logged in user: ${Amplify.Auth.fetchUserAttributes().toString()}");
+        safePrint(
+          "Attributes of Logged in user: ${await Amplify.Auth.fetchUserAttributes().toString()}",
+        );
         await AppData.instance.load();
         _replace(context, HomePage());
       }
@@ -153,7 +177,7 @@ class _LoginPageState extends State<LoginPage> {
                   // )
                   onTap: () => {
                     _login(context),
-                    FocusManager.instance.primaryFocus?.unfocus()
+                    FocusManager.instance.primaryFocus?.unfocus(),
                   },
                 ),
                 const SizedBox(height: 30),

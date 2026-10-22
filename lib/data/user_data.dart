@@ -24,16 +24,16 @@ class LocalProfile {
   // final DateTime memberSince;
 
   LocalProfile({
-    required this.firstName,
+    // required this.firstName,
     required this.fullName,
     required this.email,
-    required this.memberSince,
+    // required this.memberSince,
   });
 
-  String firstName;
+  // String firstName;
   String fullName;
   String email;
-  DateTime memberSince;
+  // DateTime memberSince;
 
   String get initials {
     final parts = fullName.trim().split(RegExp(r'\s+'));
@@ -277,10 +277,10 @@ class AppData extends ValueNotifier<UserData> {
   /// Everything at zero, for first launch and while loading.
   static final UserData empty = UserData(
     profile: LocalProfile(
-      firstName: '',
+      // firstName: '',
       fullName: '',
       email: '',
-      memberSince: DateTime.now(),
+      // memberSince: DateTime.now(),
     ),
     impact: const {},
     lifetime: const LifetimeImpact(co2SavedKg: 0, totalTrips: 0, totalKm: 0),

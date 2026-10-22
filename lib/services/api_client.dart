@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
+import 'package:travelly_flutter_ios_style/data/user2.dart';
 
 import '../data/user_data.dart';
 import '../core/user_data_session.dart';
@@ -43,6 +44,7 @@ class ApiClient {
     //   safePrint(data.toList());
     // }
 
+
     // final List<AuthUserAttribute> attributes = await Amplify.Auth.fetchUserAttributes();
     final attributes = await Amplify.Auth.fetchUserAttributes();
 
@@ -52,6 +54,7 @@ class ApiClient {
         userAttributeKey: CognitoUserAttributeKey.email, value: "n/a",
       ),
     );
+
       
     final String fullName;
 
@@ -138,8 +141,12 @@ class ApiClient {
       },
     };
 
-    // return _parse(jsonDecode(response2.body) as Map<String, dynamic>);
-    return _parse(userMap);
+    final UserDatabase _dbService = UserDatabase.instance;
+    final String? userID = UserDataSession.boundUserId;
+    final result = await _dbService.fetchUserData(userId: userID);
+    print(result);
+    // return _parse(userMap);
+    return _parse(result);
   }
 
   static UserData _parse(Map<String, dynamic> json) {
@@ -149,12 +156,12 @@ class ApiClient {
 
     return UserData(
       profile: LocalProfile(
-        firstName: profile['first_name'] as String? ?? '',
+        // firstName: profile['first_name'] as String? ?? '',
         fullName: profile['full_name'] as String? ?? '',
         email: profile['email'] as String? ?? '',
-        memberSince:
-            DateTime.tryParse(profile['member_since'] as String? ?? '') ??
-            DateTime.now(),
+        // memberSince:
+        //     DateTime.tryParse(profile['member_since'] as String? ?? '') ??
+        //     DateTime.now(),
       ),
       impact: {
         for (final range in ImpactRange.values)
