@@ -50,6 +50,3 @@ flutter create .
 flutter pub get
 flutter run -d windows
 ```
-
-
-@Marshal if you want to get Android studio going that would be amazing
