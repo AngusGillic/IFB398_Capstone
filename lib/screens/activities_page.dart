@@ -69,7 +69,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
         ),
         actions: [
           for (final trip in [
-            ('Walking', 0.5),
+            ('Walk', 0.5),
             ('Cycle', 1.0),
             ('Bus', 2.0),
             ('Transit', 2.0),
@@ -83,17 +83,16 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
 
                 try {
                   await UserDatabase.instance.saveRecordedTrip(
-                    userId: UserDataSession.boundUserId, 
-                    transportMode: trip.$1, 
-                    co2SavedKg: trip.$2, 
+                    userId: UserDataSession.boundUserId,
+                    transportMode: trip.$1,
+                    co2SavedKg: trip.$2,
                     distanceKm: 0.8,
                     durationMinutes: 3,
-                    coinsEarned: (trip.$2 * 10).floor(), 
-                    tripDate: DateTime.now().toLocal()
+                    coinsEarned: (trip.$2 * 10).floor(),
+                    tripDate: DateTime.now().toLocal(),
                   );
 
                   await AppData.instance.load();
-
 
                   print("Trip was added");
                 } catch (error) {
