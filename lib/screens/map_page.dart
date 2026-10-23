@@ -849,87 +849,89 @@ class _RoutesSheet extends StatelessWidget {
                               final _petData = PetData.instance;
                               bool petSaved = false;
 
-                              // bool _petReady =
-                              //     !_petData.busy &&
-                              //     !_petData.needsRetry &&
-                              //     !_petData.needsRefresh;
+                              if (option.mode.label != "Drive") {
+                                try {
+                                  // A user must be bound before PetData can load.
 
-                              try {
-                                // A user must be bound before PetData can load.
-                                if (_petData.owner == null) {
-                                  debugPrint(
-                                    'Trip save failed: no pet owner is bound.',
-                                  );
-                                  return;
-                                }
-
-                                // Resolve any previously pending save first.
-                                if (_petData.needsRetry) {
-                                  final retried = await _petData.retry();
-
-                                  if (!retried || _petData.needsRetry) {
+                                  if (_petData.owner == null) {
                                     debugPrint(
-                                      'Trip save failed: pending save needs retry.',
+                                      'Trip save failed: no pet owner is bound.',
                                     );
                                     return;
                                   }
-                                }
 
-                                // Load the pet state if it has not been initialized.
-                                if (_petData.value == null ||
-                                    _petData.needsRefresh) {
-                                  await _petData.load();
-                                }
+                                  // Resolve any previously pending save first.
+                                  if (_petData.needsRetry) {
+                                    final retried = await _petData.retry();
 
-                                // Verify the state is available before recording the trip.
-                                if (_petData.value == null ||
-                                    _petData.busy ||
-                                    _petData.needsRetry ||
-                                    _petData.needsRefresh) {
-                                  debugPrint(
-                                    'Trip save failed: PetData is not ready. '
-                                    'value=${_petData.value != null}, '
-                                    'busy=${_petData.busy}, '
-                                    'needsRetry=${_petData.needsRetry}, '
-                                    'needsRefresh=${_petData.needsRefresh}, '
-                                    'error=${_petData.error}',
+                                    if (!retried || _petData.needsRetry) {
+                                      debugPrint(
+                                        'Trip save failed: pending save needs retry.',
+                                      );
+                                      return;
+                                    }
+                                  }
+
+                                  // Load the pet state if it has not been initialized.
+                                  if (_petData.value == null ||
+                                      _petData.needsRefresh) {
+                                    await _petData.load();
+                                  }
+
+                                  // Verify the state is available before recording the trip.
+                                  if (_petData.value == null ||
+                                      _petData.busy ||
+                                      _petData.needsRetry ||
+                                      _petData.needsRefresh) {
+                                    debugPrint(
+                                      'Trip save failed: PetData is not ready. '
+                                      'value=${_petData.value != null}, '
+                                      'busy=${_petData.busy}, '
+                                      'needsRetry=${_petData.needsRetry}, '
+                                      'needsRefresh=${_petData.needsRefresh}, '
+                                      'error=${_petData.error}',
+                                    );
+                                    return;
+                                  }
+
+                                  if (!_petData.local) {
+                                    debugPrint(
+                                      'Trip save failed: PetData is not local.',
+                                    );
+                                    return;
+                                  }
+
+                                  print(
+                                    "Mode for PetData: ${option.mode.label}",
                                   );
+                                  print("co2Saved for PetData: ${co2Saved}");
+
+                                  debugPrint(
+                                    'Trip mode: "${option.mode.label}"',
+                                  );
+                                  debugPrint('CO2 saved: $co2Saved');
+                                  debugPrint(
+                                    'CO2 is finite: ${co2Saved.isFinite}',
+                                  );
+
+                                  petSaved = await _petData.recordTrip(
+                                    option.mode.label,
+                                    co2Saved,
+                                  );
+
+                                  debugPrint('Pet trip saved: $petSaved');
+
+                                  if (!petSaved) {
+                                    debugPrint(
+                                      'PetData rejected the trip: ${_petData.error}',
+                                    );
+                                    return;
+                                  }
+                                } catch (error, stackTrace) {
+                                  debugPrint('Pet trip save error: $error');
+                                  debugPrintStack(stackTrace: stackTrace);
                                   return;
                                 }
-
-                                if (!_petData.local) {
-                                  debugPrint(
-                                    'Trip save failed: PetData is not local.',
-                                  );
-                                  return;
-                                }
-
-                                print("Mode for PetData: ${option.mode.label}");
-                                print("co2Saved for PetData: ${co2Saved}");
-
-                                debugPrint('Trip mode: "${option.mode.label}"');
-                                debugPrint('CO2 saved: $co2Saved');
-                                debugPrint(
-                                  'CO2 is finite: ${co2Saved.isFinite}',
-                                );
-
-                                petSaved = await _petData.recordTrip(
-                                  option.mode.label,
-                                  co2Saved,
-                                );
-
-                                debugPrint('Pet trip saved: $petSaved');
-
-                                if (!petSaved) {
-                                  debugPrint(
-                                    'PetData rejected the trip: ${_petData.error}',
-                                  );
-                                  return;
-                                }
-                              } catch (error, stackTrace) {
-                                debugPrint('Pet trip save error: $error');
-                                debugPrintStack(stackTrace: stackTrace);
-                                return;
                               }
 
                               await UserDatabase.instance.saveRecordedTrip(

@@ -33,7 +33,7 @@ class LocalPetStore extends PetRepository {
     'sunlight': {'energy': 0.15},
   };
   static const _decay = {'happiness': 0.02, 'energy': 0.04, 'health': 0.01};
-  static const tripModes = ['Walking', 'Cycling', 'Bus', 'Transit'];
+  static const tripModes = ['Walking', 'Cycle', 'Bus', 'Transit'];
 
   void _checkOwner(String owner) {
     if (owner.trim().isEmpty) {

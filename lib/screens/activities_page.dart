@@ -70,9 +70,9 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
         actions: [
           for (final trip in [
             ('Walking', 0.5),
-            ('Cycling', 1.0),
+            ('Cycle', 1.0),
             ('Bus', 2.0),
-            ('Transit', 2.0)
+            ('Transit', 2.0),
           ])
             CupertinoActionSheetAction(
               onPressed: () async {

@@ -16,6 +16,7 @@ import '../widgets/pet_avatar.dart';
 import 'activities_page.dart';
 import 'pet_profile_page.dart';
 import 'pet_selection_page.dart';
+import '../widgets/mock_painters.dart';
 
 class PetHomePage extends StatefulWidget {
   const PetHomePage({super.key, this.data});
