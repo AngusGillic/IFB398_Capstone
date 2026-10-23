@@ -56,7 +56,6 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
 
   // To track and monitor which OTP box is currently being highlighted
   // From left to right, one at a time.
-  // Current Bug: can't backspace base on current index of FocusNode
   void _onCodeChange(int index, String number) {
     // For adding in new inputs
     if (number.isNotEmpty) {
@@ -92,7 +91,6 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
     try {
       final result = await Amplify.Auth.confirmSignUp(
         username: widget.username,
-        // username: "mentosman202_gmail_com",
         confirmationCode: confirmCode,
       );
 
@@ -128,7 +126,6 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
     }
   }
 
-  // -------------------------------------FOR LATER DEVELOPMENT-------------------------------------
   Future<void> _resendCode() async {
     setState(() {
       loadingAnimation = true;
@@ -199,7 +196,6 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
       setState(() => loadingAnimation = false);
     }
   }
-  // -------------------------------------FOR LATER DEVELOPMENT-------------------------------------
 
   void _showDialogError(BuildContext context, String message) {
     showCupertinoDialog(
@@ -296,10 +292,6 @@ class _VerifyEmailState extends State<VerifyEmailPage> {
           const Spacer(),
           GreenButton(
             text: 'Verify',
-            // For debugging only
-            // onTap: () => Navigator.of(context).pushReplacement(
-            //   MaterialPageRoute(builder: (_) => const HomePage()),
-            // ),
             onTap: () => _verifyCode(context),
           ),
           const SizedBox(height: 18),
@@ -313,7 +305,6 @@ class _CodeBox extends StatelessWidget {
   final TextEditingController otpBoxController;
   final FocusNode focusNode;
   final ValueChanged<String> onChanged;
-  // final VoidCallback? onBackspace;
 
   const _CodeBox({
     required this.otpBoxController,

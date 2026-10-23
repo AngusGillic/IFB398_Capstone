@@ -11,9 +11,6 @@ import '../core/user_data_session.dart';
 import '../services/username_mapper.dart';
 
 class ApiClient {
-  // String userId
-  // static const _base2 =
-  //     "yes";
 
   static Future<UserData> fetchUserData({String? token}) async {
     safePrint("1. Fetching data...");
@@ -23,29 +20,6 @@ class ApiClient {
 
     safePrint("2. Current logged in user: $userId");
 
-    // final response2 = await http.get(Uri.parse('$_base2?userId=$userId'));
-
-    // final decoded = jsonDecode(response2.body);
-    // safePrint("Decode type: ${decoded.runtimeType}");
-    // safePrint("Decoded data: $decoded");
-
-    // safePrint("3. Status code = ${response2.statusCode}");
-    // safePrint("4. JSON Body: ${response2.body}");
-
-    // if (decoded is List) {
-    //   safePrint("API returned a List");
-    // } else if (decoded is Map<String, dynamic>) {
-    //   safePrint("API returned a Map");
-    // }
-
-    // safePrint("5. JSON data turned into list");
-    // if (response2.statusCode == 200) {
-    //   final data = json.decode(response2.body) as List<dynamic>;
-    //   safePrint(data.toList());
-    // }
-
-
-    // final List<AuthUserAttribute> attributes = await Amplify.Auth.fetchUserAttributes();
     final attributes = await Amplify.Auth.fetchUserAttributes();
 
     final email = attributes.firstWhere(
@@ -55,7 +29,6 @@ class ApiClient {
       ),
     );
 
-      
     final String fullName;
 
     if (email != "n/a") {
@@ -77,7 +50,6 @@ class ApiClient {
               ),
             )
         ).value,
-        // "member_since": "2026-03-27",
       },
       "impact": {
         "week": {
@@ -146,8 +118,8 @@ class ApiClient {
     final result = await _dbService.fetchUserData(userId: userID);
     
     print(result);
-    // return _parse(userMap);
-    return _parse(result);
+    return _parse(userMap);
+    // return _parse(result);
   }
 
   static UserData _parse(Map<String, dynamic> json) {

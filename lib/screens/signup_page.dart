@@ -20,7 +20,6 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  // final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmController = TextEditingController();
@@ -46,7 +45,6 @@ class _SignUpPageState extends State<SignUpPage> {
 
   @override
   void dispose() {
-    // nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
     confirmController.dispose();
@@ -96,7 +94,6 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   Future<void> _register(BuildContext context) async {
-    // For debugging only
     safePrint("Form is validated, function _register is running");
 
     setState(() {
@@ -135,8 +132,6 @@ class _SignUpPageState extends State<SignUpPage> {
               username: username,
               email: emailController.text.trim(),
             ),
-            // For debugging only
-            // VerifyEmailPage(),
           );
           setState(() {
             loadingAnimation = false;
