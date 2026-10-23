@@ -38,88 +38,13 @@ class ApiClient {
     }
     safePrint("email variable: ${fullName}");
 
-    Map<String, dynamic> userMap = {
-      "profile": {
-        // "first_name": fullName,
-        "full_name": fullName,
-        "email": (
-            attributes.firstWhere(
-              (element) => element.userAttributeKey == CognitoUserAttributeKey.email,
-              orElse:() => const AuthUserAttribute(
-                userAttributeKey: CognitoUserAttributeKey.email, value: "n/a",
-              ),
-            )
-        ).value,
-      },
-      "impact": {
-        "week": {
-          "co2_saved_kg": 2.5,
-          "goal_kg": 3.8,
-          "values": [0.4, 0.50, 0.3, 0.77, 0.5, 0.2, 0.6],
-          "labels": ["M", "T", "W", "T", "F", "S", "S"],
-          "by_mode": {"Transit": 1.7, "Walking": 0.6, "Cycling": 0.1},
-          "green_km": 19.3,
-          "driven_km": 3.8,
-          "change_vs_previous": 0.42,
-          "trips": 8,
-        },
-        "month": {
-          "co2_saved_kg": 5.8,
-          "goal_kg": 14.8,
-          "values": [2.1, 2.4, 2.9, 2.4],
-          "labels": ['W1', 'W2', 'W3', 'W4'],
-          "by_mode": {'Transit': 6.9, 'Walking': 1.9, 'Cycling': 1.0},
-          "green_km": 74.2,
-          "driven_km": 21.5,
-          "change_vs_previous": 0.12,
-          "trips": 43,
-        },
-        "year": {
-          "co2_saved_kg": 52,
-         "goal_kg": 90,
-          "values": [3.1, 4.0, 4.8, 5.2, 4.4, 3.9, 4.6, 5.1, 4.2, 4.5, 4.0, 4.2],
-          "labels": ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'],
-          "by_mode": {'Transit': 36.4, 'Walking': 9.8, 'Cycling': 5.8},
-          "green_km": 331.0,
-          "driven_km": 81.7,
-          "change_vs_previous": 0.24,
-          "trips": 148,
-        },
-      },
-      "lifetime": {"co2_saved_kg": 62, "total_trips": 158, "total_km": 415.8},
-      "pet": {
-        "coins": 300,
-        "happiness": 0.85,
-        "energy": 0.65,
-        "health": 0.93,
-        "days_together": 42,
-      },
-      "suggestions": [
-        {
-          "label": "Work",
-          "mode": "Bus 150",
-          "duration_minutes": 30,
-          "co2_saved_kg": 0.8,
-          "leave_at": "8:20am",
-          "arrive_at": "8:50am",
-        },
-      ],
-      "challenge": {
-        "title": "Green Week Walk Challenge",
-        "days_done": 4,
-        "days_total": 7,
-        "steps": 2000,
-        "step_goal": 10000,
-      },
-    };
-
     final UserDatabase _dbService = UserDatabase.instance;
     final String? userID = UserDataSession.boundUserId;
     final result = await _dbService.fetchUserData(userId: userID);
     
     print(result);
-    return _parse(userMap);
-    // return _parse(result);
+    // return _parse(userMap);
+    return _parse(result);
   }
 
   static UserData _parse(Map<String, dynamic> json) {
